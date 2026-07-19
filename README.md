@@ -1,4 +1,4 @@
-# DiffCalculator
+# 3DSCalc
 
 A browser-based forward diffuse-scattering calculator. It computes the
 three-dimensional diffuse intensity `I(h,k,l)` in reciprocal space directly
