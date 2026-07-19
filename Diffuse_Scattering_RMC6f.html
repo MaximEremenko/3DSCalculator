@@ -966,7 +966,7 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
 <script src="./js/lammps_data_reader.js"></script>
 <script src="./js/scattering_coeff_db.js"></script>
 <script src="./js/scattering_coeff_sources.js"></script>
-<script src="../Format_Converter/js/unified_hdf5.js"></script>
+<script src="./js/unified_hdf5.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id), PI2=2*Math.PI, EPS=1e-15;
@@ -1479,7 +1479,7 @@ function parseLammps(name,text){if(!window.LammpsDataReader||typeof window.Lammp
 
 async function ensureUnifiedH5(){
 if(!window.UnifiedH5)throw new Error("Unified HDF5 helper failed to load.");
-if(!window.h5wasm)await loadScriptOnce("../Format_Converter/js/h5wasm.js");
+if(!window.h5wasm)await loadScriptOnce("./js/h5wasm.js");
 if(!window.h5wasm)throw new Error("HDF5 engine failed to load.");
 await window.h5wasm.ready;
 return window.h5wasm;
