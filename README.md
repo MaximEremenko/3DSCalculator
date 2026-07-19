@@ -1,4 +1,4 @@
-# RMC6f Diffuse Scattering Calculator
+# DiffCalculator
 
 A browser-based forward diffuse-scattering calculator. It computes the
 three-dimensional diffuse intensity `I(h,k,l)` in reciprocal space directly
@@ -41,7 +41,7 @@ runs client-side in the browser: structure files never leave your machine.
 
 ## Getting Started
 
-Open `Diffuse_Scattering_RMC6f.html` in a modern browser. All local modules
+Open `index.html` in a modern browser. All local modules
 load through plain script tags (no local `fetch` or workers), so opening the
 file directly from disk (`file://`) works in practice; a local web server is
 the most reliable route:
@@ -50,7 +50,7 @@ the most reliable route:
 python -m http.server
 ```
 
-then browse to `http://localhost:8000/Diffuse_Scattering_RMC6f.html`.
+then browse to `http://localhost:8000/index.html`.
 
 Notes:
 
