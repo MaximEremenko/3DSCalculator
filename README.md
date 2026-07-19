@@ -1,4 +1,4 @@
-# 3DSForge
+# 3DSCalculator
 
 A browser-based forward diffuse-scattering calculator. It computes the
 three-dimensional diffuse intensity `I(h,k,l)` in reciprocal space directly
