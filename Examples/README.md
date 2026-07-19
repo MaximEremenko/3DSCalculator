@@ -14,4 +14,4 @@ Included files:
 
 For workflow guidance and scientific context, see:
 
-- [Utilities diffuse-scattering examples](../../../docs/diffuse_scattering_examples.html)
+- [Diffuse-scattering examples guide](../docs/diffuse_scattering_examples.html)
