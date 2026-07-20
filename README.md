@@ -1,5 +1,7 @@
 # 3DSCalculator
 
+**Live tool:** https://maximeremenko.github.io/3DSCalculator/
+
 A browser-based forward diffuse-scattering calculator. It computes the
 three-dimensional diffuse intensity `I(h,k,l)` in reciprocal space directly
 from atomistic structure files — RMCProfile `.rmc6f` configurations, LAMMPS
