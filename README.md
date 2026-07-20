@@ -12,14 +12,14 @@ runs client-side in the browser: structure files never leave your machine.
 ## Documentation
 
 The `docs/` directory contains the full documentation set
-(entry point: [`docs/index.html`](docs/index.html)):
+(live entry point: [https://maximeremenko.github.io/3DSCalculator/docs/](https://maximeremenko.github.io/3DSCalculator/docs/)):
 
-- [User Guide](docs/diffuse_scattering.html) — UI walkthrough and workflow.
-- [Examples](docs/diffuse_scattering_examples.html) — worked examples with the shipped benchmark files.
-- [Theory](docs/diffuse_scattering_theory.html) — the equations behind the calculator.
-- [Supplementary](docs/diffuse_scattering_supplementary.html) — backend provenance and scattering-table families.
-- [Bibliography](docs/diffuse_scattering_bibliography.html) — formal references.
-- [Troubleshooting](docs/diffuse_scattering_troubleshooting.html) — common issues and fixes.
+- [User Guide](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering.html) — UI walkthrough and workflow.
+- [Examples](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering_examples.html) — worked examples with the shipped benchmark files.
+- [Theory](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering_theory.html) — the equations behind the calculator.
+- [Supplementary](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering_supplementary.html) — backend provenance and scattering-table families.
+- [Bibliography](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering_bibliography.html) — formal references.
+- [Troubleshooting](https://maximeremenko.github.io/3DSCalculator/docs/diffuse_scattering_troubleshooting.html) — common issues and fixes.
 
 ## Features
 
