@@ -9,6 +9,18 @@ data files, or unified structure HDF5 — and visualizes the result as
 interactive 3D isosurfaces, 3D slice planes, and 2D slice maps. Everything
 runs client-side in the browser: structure files never leave your machine.
 
+## Documentation
+
+The `docs/` directory contains the full documentation set
+(entry point: [`docs/index.html`](docs/index.html)):
+
+- [User Guide](docs/diffuse_scattering.html) — UI walkthrough and workflow.
+- [Examples](docs/diffuse_scattering_examples.html) — worked examples with the shipped benchmark files.
+- [Theory](docs/diffuse_scattering_theory.html) — the equations behind the calculator.
+- [Supplementary](docs/diffuse_scattering_supplementary.html) — backend provenance and scattering-table families.
+- [Bibliography](docs/diffuse_scattering_bibliography.html) — formal references.
+- [Troubleshooting](docs/diffuse_scattering_troubleshooting.html) — common issues and fixes.
+
 ## Features
 
 - **Input formats**: RMCProfile `.rmc6f`, LAMMPS data files
@@ -64,18 +76,6 @@ Notes:
 
 Load one of the files from `Examples/` (or your own structure), set the
 `h,k,l` grid range, and press **Compute Diffuse**.
-
-## Documentation
-
-The `docs/` directory contains the full documentation set
-(entry point: [`docs/index.html`](docs/index.html)):
-
-- [User Guide](docs/diffuse_scattering.html) — UI walkthrough and workflow.
-- [Examples](docs/diffuse_scattering_examples.html) — worked examples with the shipped benchmark files.
-- [Theory](docs/diffuse_scattering_theory.html) — the equations behind the calculator.
-- [Supplementary](docs/diffuse_scattering_supplementary.html) — backend provenance and scattering-table families.
-- [Bibliography](docs/diffuse_scattering_bibliography.html) — formal references.
-- [Troubleshooting](docs/diffuse_scattering_troubleshooting.html) — common issues and fixes.
 
 ## Examples
 
