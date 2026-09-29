@@ -61,7 +61,8 @@ The `docs/` directory contains the full documentation set
   factors for 155 ions, and optional ideal-paramagnet subtraction. A species
   table sets the form factor, C2 and moment of each magnetic species. It is
   validated against J. A. M. Paddison's Scatty on MnO and spin ice.
-- **Modulated and incommensurate structures**: a displacive wave,
+- **Modulated and incommensurate structures** (optional tools, shown for
+  the Cr spin-density-wave example or on request): a displacive wave,
   spin-density wave or helix with any wavevector q, applied to the loaded
   structure; satellites come out at G ± q with the box's finite-size width.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray

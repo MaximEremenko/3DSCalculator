@@ -31,6 +31,7 @@ FILES = [
     "Examples/magnetic/MnO_160K_spins_08.txt",
     "Examples/lammps/fe_bcc_spins.data",
     "Examples/lammps/skyrmion_film.data",
+    "Examples/modulation/Cr_bcc.rmc6f",
 ]
 OUT = Path("Examples/embedded")
 

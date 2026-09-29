@@ -182,6 +182,7 @@
   </table>
   <p>A LAMMPS data file has no unit cell, so the calculator takes the whole box as the cell, and <em>h</em>, <em>k</em>, <em>l</em> count reciprocal-box units. The Fe box is 10 cells wide, so bcc (1 1 0) appears at (10 10 0). The skyrmion period of 10 sites in a 60-site box puts the satellites 6 units from the origin, at (6 0 0), (0 6 0), (6 6 0) and their opposites. The box is periodic, so it scatters only at integer box units, and the examples use step 1, the default for LAMMPS data. Between integer units, a finite box shows only its size fringes. Both files are written by <code>tools/make_lammps_examples.py</code>, which also checks that the skyrmion texture has topological charge &minus;1 per magnetic cell.</p>
   <p>The MnO Scatty results are checked against J. A. M. Paddison's Scatty in the test suite.</p>
+  <p><strong>Modulations: Cr spin-density wave</strong> loads bcc chromium (<code>Examples/modulation/Cr_bcc.rmc6f</code>, 21&times;21&times;21 cells) and applies its incommensurate transverse SDW with the Modulation tools, which appear only for such examples. Satellite pairs split by &plusmn;1/21 along h sit around (1 0 0) and (2 &plusmn;1 0). They almost vanish around (0 1 0), where <strong>Q</strong> is nearly parallel to the moments.</p>
 </section>
 <section>
   <h2>How To Choose The Right Example</h2>
@@ -194,6 +195,7 @@
     <tr><td>magnetic RMCProfile input</td><td>MnO spins: RMCProfile</td></tr>
     <tr><td>correlated paramagnetic scattering, averaged over configurations</td><td>MnO spins: 160 K</td></tr>
     <tr><td>LAMMPS spins and the magnetic satellites of a modulated structure</td><td>LAMMPS spins: skyrmion film</td></tr>
+    <tr><td>an incommensurate spin-density wave and the polarization factor</td><td>Modulations: Cr spin-density wave</td></tr>
   </table>
 </section>
 <section>

@@ -62,6 +62,14 @@ finite box shows only its size fringes. `tools/make_lammps_examples.py`
 writes both files and checks the skyrmion texture's topological charge. They
 are generated rather than copied from LAMMPS, whose own examples are GPL.
 
+Modulation example (`modulation/`):
+
+- `Cr_bcc.rmc6f`
+  - bcc chromium, 21×21×21 cells (18522 atoms, a = 2.884 Å). The "Cr
+    spin-density wave" button applies chromium's transverse SDW,
+    q = (1 − 1/21, 0, 0) with moments along b, using the calculator's
+    Modulation tools. `tools/make_modulation_examples.py` writes the file.
+
 For workflow guidance and scientific context, see:
 
 - [Diffuse-scattering examples guide](../docs/diffuse_scattering_examples.html)
