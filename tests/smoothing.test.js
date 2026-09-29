@@ -64,3 +64,20 @@ test("smoothing keeps a flat field flat, edges included", () => {
   const out = smoothIntensity3d(flat, shape, smoothKernels([6, 6, 6], [0.1, 0.1, 0.1], { type: "chebyshev", chebDb: 100, scale: 1 }));
   for (const v of out.data) assert.ok(Math.abs(v - 3.5) < 1e-12);
 });
+
+test("kernels peak at their centre for odd and even lengths, and smoothing does not move a peak", () => {
+  for (const n of [5, 6, 20, 21]) {
+    for (const w of [chebwinWindow(n, 100), lanczosWindow(n)]) {
+      const k = fftMagShiftNorm(w, n), c = Math.floor(n / 2);
+      assert.equal(k.indexOf(Math.max(...k)), c, `n = ${n}: peak at ${k.indexOf(Math.max(...k))}, centre ${c}`);
+      for (let d = 1; c - d >= (n % 2 ? 0 : 1); d++) assert.ok(Math.abs(k[c - d] - k[c + d]) < 1e-12, `n = ${n}: asymmetric at +-${d}`);
+    }
+  }
+  // a single peak keeps its position (odd supercell, as the 21-cell Cr example)
+  const shape = [41, 1, 1], I = new Float64Array(41);
+  I[20] = 1;
+  const out = smoothIntensity3d(I, shape, smoothKernels([21, 1, 1], [1 / 21, 1, 1], { type: "chebyshev", chebDb: 100, scale: 1 })).data;
+  let m0 = 0, m1 = 0;
+  out.forEach((v, i) => { m0 += v; m1 += v * i; });
+  assert.ok(Math.abs(m1 / m0 - 20) < 1e-9, `centroid ${m1 / m0}`);
+});
