@@ -7,11 +7,16 @@ current layout: id type x y z spx spy spz sp, units metal).
   Bragg peaks plus diffuse scattering.
 - skyrmion_film.data: a triangular monolayer of 60 x 60 Fe sites (a = 2.5 A)
   in a triclinic box, with a triple-q (Bloch) skyrmion lattice of period
-  10 sites (cores down in a +z background) and 2.5 muB moments: six magnetic satellites around each
-  (hk0) Bragg point, and rods along l for the single layer.
+  10 sites (cores down in a +z background, topological charge -1 per
+  magnetic cell) and 2.5 muB moments: six magnetic satellites around each
+  (hk0) Bragg point, and rods along l for the single layer. The film sits a
+  quarter site off the box corner and halfway up the box, so no atom lies
+  on a box face; a rigid shift leaves |A(Q)|^2 unchanged.
 
 hkl of LAMMPS data refer to the whole box: bcc (1 1 0) is (10 10 0) and the
-skyrmion wavevectors are at 6 box units.
+skyrmion wavevectors are at 6 box units. The box is periodic, so its
+scattering is sampled at integer box units (step 1); between them a finite
+box shows only its size fringes.
 
 Usage (from the repository root):
     python tools/make_lammps_examples.py
@@ -48,6 +53,26 @@ def unit(v):
     return [x / n for x in v]
 
 
+def topological_charge(m, n):
+    """Skyrmion number of spins m[i][j] on a periodic n x n triangular lattice
+    (Berg and Luscher: the solid angles of the two triangles of each cell)."""
+    def dot(a, b):
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+    def cross(a, b):
+        return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+    def omega(a, b, c):
+        return 2 * math.atan2(dot(a, cross(b, c)), 1 + dot(a, b) + dot(b, c) + dot(c, a))
+
+    total = 0.0
+    for i in range(n):
+        for j in range(n):
+            s0, s1, s2, s3 = m[i][j], m[(i + 1) % n][j], m[i][(j + 1) % n], m[(i + 1) % n][(j + 1) % n]
+            total += omega(s0, s1, s2) + omega(s1, s3, s2)
+    return total / (4 * math.pi)
+
+
 def fe_bcc():
     rng = random.Random(20260929)
     a, n, kappa = 2.8665, 10, 5.0
@@ -75,7 +100,8 @@ def skyrmion_film():
     b1 = (2 * math.pi * a2[1] / area, -2 * math.pi * a2[0] / area, 0.0)
     b2 = (-2 * math.pi * a1[1] / area, 2 * math.pi * a1[0] / area, 0.0)
     qs = [[c / period for c in b1], [c / period for c in b2], [-(x + y) / period for x, y in zip(b1, b2)]]
-    rows = []
+    lz = 5.0
+    rows, spins = [], [[None] * n for _ in range(n)]
     for i in range(n):
         for j in range(n):
             r = [i * a1[d] + j * a2[d] for d in range(3)]
@@ -87,8 +113,13 @@ def skyrmion_film():
                 ph = q[0] * r[0] + q[1] * r[1]
                 for d in range(3):
                     m[d] += -(1.0 if d == 2 else 0.0) * math.cos(ph) + perp[d] * math.sin(ph)
-            rows.append((r, unit(m), 2.5))
-    box = (n * a, n * a2[1], 5.0)
+            spins[i][j] = unit(m)
+            # the same texture, shifted off the box faces
+            shifted = [r[d] + 0.25 * (a1[d] + a2[d]) for d in range(2)] + [lz / 2]
+            rows.append((shifted, spins[i][j], 2.5))
+    charge = topological_charge(spins, n)
+    print(f"skyrmion film: topological charge {charge:.4f} ({charge / (n // period) ** 2:.4f} per magnetic cell)")
+    box = (n * a, n * a2[1], lz)
     write("skyrmion_film.data", "triple-q skyrmion lattice in a triangular Fe monolayer", box, (n * a2[0], 0.0, 0.0), rows)
 
 

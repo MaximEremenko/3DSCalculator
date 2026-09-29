@@ -39,16 +39,20 @@ current column order (`id type x y z spx spy spz sp`, units metal):
     and thermal diffuse scattering.
 - `skyrmion_film.data`
   - A triangular Fe monolayer of 60×60 sites (a = 2.5 Å) in a triclinic box,
-    carrying a triple-q Bloch skyrmion lattice with a period of 10 sites and
-    2.5 μB moments: six magnetic satellites around every Bragg point (in the
-    example's grid, around the origin) and rods along l, since the film is
-    one layer thick.
+    carrying a triple-q Bloch skyrmion lattice with a period of 10 sites
+    (topological charge −1 per magnetic cell) and 2.5 μB moments: six
+    magnetic satellites around every Bragg point (in the example's grid,
+    around the origin) and rods along l, since the film is one layer thick.
+    The example button computes magnetic scattering only, on a linear scale.
 
 The calculator takes the whole LAMMPS box as the cell, so h, k, l count
 reciprocal-box units: bcc (1 1 0) is (10 10 0) here, and the skyrmion
 satellites lie 6 units from the origin, at (6 0 0), (0 6 0), (6 6 0) and
-their opposites. `tools/make_lammps_examples.py` writes both files. They are
-generated rather than copied from LAMMPS, whose own examples are GPL.
+their opposites. A periodic box scatters only at integer box units, so the
+examples, and LAMMPS data in general, use step 1. Between integer units, a
+finite box shows only its size fringes. `tools/make_lammps_examples.py`
+writes both files and checks the skyrmion texture's topological charge. They
+are generated rather than copied from LAMMPS, whose own examples are GPL.
 
 For workflow guidance and scientific context, see:
 
