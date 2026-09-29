@@ -160,6 +160,24 @@
     return t;
   }
 
+  // |q| for a run of the C-ordered grid, without building the target array.
+  function qMagnitudesChunk(h, k, l, Bq, start, count) {
+    const nk = k.length;
+    const nl = l.length;
+    const plane = nk * nl;
+    const out = new Float64Array(count);
+    for (let q = 0; q < count; q++) {
+      const linear = start + q;
+      const ih = Math.floor(linear / plane);
+      const rem = linear - ih * plane;
+      const ik = Math.floor(rem / nl);
+      const il = rem - ik * nl;
+      const v = mul([h[ih], k[ik], l[il]], Bq);
+      out[q] = Math.hypot(v[0], v[1], v[2]);
+    }
+    return out;
+  }
+
   function attachNeutronCoefficients(parsed, fallback = 10) {
     if (!parsed || !Array.isArray(parsed.elements)) {
       throw new Error("Invalid parsed RMC structure");
@@ -292,6 +310,7 @@
     complexReal,
     complexOnes,
     targetsChunk,
+    qMagnitudesChunk,
     attachNeutronCoefficients,
     laueAxis,
     laueChunk,

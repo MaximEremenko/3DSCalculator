@@ -279,6 +279,47 @@
     return profile;
   }
 
+  // Indices where a per-axis lattice sum (interleaved complex, magnitude up
+  // to n) is not zero. On steps commensurate with the supercell only integer
+  // h survive, and they form an arithmetic progression.
+  function latticeSupport(L, n) {
+    const out = [];
+    for (let i = 0; i < L.length / 2; i++) {
+      if (Math.hypot(L[i * 2], L[i * 2 + 1]) > 1e-9 * n) out.push(i);
+    }
+    return out;
+  }
+
+  function isProgression(values) {
+    if (values.length < 3) return true;
+    const step = (values[values.length - 1] - values[0]) / (values.length - 1);
+    const tol = 1e-9 * Math.max(1, Math.abs(step), Math.abs(values[0]));
+    return values.every((v, i) => Math.abs(v - (values[0] + i * step)) <= tol);
+  }
+
+  // Copies sub-grid values into a run of the full C-ordered grid; points
+  // outside the sub-grid stay zero.
+  function gatherSubGrid(values, index, start, count, nk, nl) {
+    const out = new Float64Array(count * 2);
+    const plane = nk * nl;
+    const nkSub = index.nk;
+    const nlSub = index.nl;
+    for (let q = 0; q < count; q++) {
+      const linear = start + q;
+      const ih = Math.floor(linear / plane);
+      const rem = linear - ih * plane;
+      const ik = Math.floor(rem / nl);
+      const a = index.h[ih];
+      const b = index.k[ik];
+      const c = index.l[rem - ik * nl];
+      if (a < 0 || b < 0 || c < 0) continue;
+      const j = (a * nkSub + b) * nlSub + c;
+      out[q * 2] = values[j * 2];
+      out[q * 2 + 1] = values[j * 2 + 1];
+    }
+    return out;
+  }
+
   async function computeIntensity(args) {
     const core = needCore();
     const parsed = args.parsed;
@@ -292,6 +333,10 @@
     const runType3 = args.runType3;
     const onStatus = args.onStatus;
     const onStageTiming = args.onStageTiming;
+    const gridAware = !!args.gridAware;
+    // Only for backends that stay accurate on very small grids: the f32
+    // type-3 paths are not, so they keep the full-grid A_delta.
+    const deltaOnLattice = !!args.deltaOnLattice;
     if (typeof runType3 !== "function") {
       throw new Error("computeIntensity requires runType3 callback");
     }
@@ -334,12 +379,76 @@
     }
     const mInv = 1 / cellCount;
     profile.averageCellCount = sub ? cellCount : null;
+    // Largest source count, so grid-aware backends can share one plan.
+    const pointCapacity = profile.engine === "neutron_fast"
+      ? parsed.atoms
+      : Math.max(1, ...profile.groups.map((g) => g.count));
+
+    // L vanishes off integer h on axes whose steps are commensurate with the
+    // supercell, so A_delta is only needed on that (small) sub-grid.
+    let deltaSub = null;
+    let deltaIndex = null;
+    if (sub && deltaOnLattice) {
+      const axes = [h, k, l];
+      const supercell = parsed.super.map((v) => Math.max(1, Math.round(Number(v) || 1)));
+      const keep = [laue.h, laue.k, laue.l].map((L, d) => {
+        const idx = latticeSupport(L, supercell[d]);
+        return isProgression(idx.map((i) => axes[d][i])) ? idx : axes[d].map((_, i) => i);
+      });
+      if (keep.some((idx, d) => idx.length < axes[d].length)) {
+        const [hs, ks, ls] = keep.map((idx, d) => idx.map((i) => axes[d][i]));
+        const n = hs.length * ks.length * ls.length;
+        deltaIndex = { nk: ks.length, nl: ls.length };
+        ["h", "k", "l"].forEach((name, d) => {
+          const pos = new Int32Array(axes[d].length).fill(-1);
+          keep[d].forEach((i, j) => { pos[i] = j; });
+          deltaIndex[name] = pos;
+        });
+        deltaSub = new Float64Array(n * 2);
+        if (n > 0) {
+          if (typeof onStatus === "function") onStatus(`Computing Adelta(hkl) on ${n} lattice points ...`);
+          const trgSub = gridAware ? null : core.targetsChunk(hs, ks, ls, Bq, 0, n);
+          const gridSub = { h: hs, k: ks, l: ls, Bq, start: 0, count: n };
+          const transformSub = async (sourcesPacked, strengths) =>
+            (
+              await runType3(
+                { dim: 3, isign: 1, sourcesPacked, targetsPacked: trgSub, strengths, grid: gridSub, pointCapacity },
+                opts,
+                backend,
+                onStageTiming
+              )
+            ).out;
+          const tAd = nowMs();
+          if (profile.engine === "neutron_fast") {
+            deltaSub.set(await transformSub(profile.srcD, profile.cAtoms));
+          } else {
+            const qMagSub = core.qMagnitudesChunk(hs, ks, ls, Bq, 0, n);
+            for (const g of profile.groups) {
+              accumulateScaledComplex(deltaSub, await transformSub(g.srcD, g.ones), profile.evalGroupCoeffs(g, qMagSub));
+            }
+          }
+          timings.adelta += nowMs() - tAd;
+        }
+      }
+    }
+    profile.deltaPoints = deltaSub ? deltaSub.length / 2 : null;
     let min = Infinity;
     let max = -Infinity;
 
     for (let chunk = 0, start = 0; start < grid; chunk++, start += chunkSize) {
       const count = Math.min(chunkSize, grid - start);
-      const trg = core.targetsChunk(h, k, l, Bq, start, count);
+      // Grid-aware backends (type-1) take the h,k,l grid instead of targets.
+      const trg = gridAware ? null : core.targetsChunk(h, k, l, Bq, start, count);
+      const gridSpec = { h, k, l, Bq, start, count };
+      const transform = async (sourcesPacked, strengths) =>
+        (
+          await runType3(
+            { dim: 3, isign: 1, sourcesPacked, targetsPacked: trg, strengths, grid: gridSpec, pointCapacity },
+            opts,
+            backend,
+            onStageTiming
+          )
+        ).out;
       const chunkTag = totalChunks > 1 ? ` (${chunk + 1}/${totalChunks})` : "";
       let q = null;
       let qa = null;
@@ -348,53 +457,29 @@
       if (sub) {
         const tAa = nowMs();
         qa = core.laueChunk(laue.h, laue.k, laue.l, start, count);
+        if (deltaSub) qd = gatherSubGrid(deltaSub, deltaIndex, start, count, k.length, l.length);
         timings.aavg += nowMs() - tAa;
       }
+      const fullDelta = sub && !deltaSub;
 
       if (profile.engine === "neutron_fast") {
         if (typeof onStatus === "function") onStatus(`Computing A(hkl)${chunkTag} ...`);
         const tA = nowMs();
-        q = (
-          await runType3(
-            {
-              dim: 3,
-              isign: 1,
-              sourcesPacked: profile.src,
-              targetsPacked: trg,
-              strengths: profile.cAtoms,
-            },
-            opts,
-            backend,
-            onStageTiming
-          )
-        ).out;
+        q = await transform(profile.src, profile.cAtoms);
         timings.a += nowMs() - tA;
 
-        if (sub) {
+        if (fullDelta) {
           if (typeof onStatus === "function") {
             onStatus(`Computing Adelta(hkl)${chunkTag} ...`);
           }
           const tAd = nowMs();
-          qd = (
-            await runType3(
-              {
-                dim: 3,
-                isign: 1,
-                sourcesPacked: profile.srcD,
-                targetsPacked: trg,
-                strengths: profile.cAtoms,
-              },
-              opts,
-              backend,
-              onStageTiming
-            )
-          ).out;
+          qd = await transform(profile.srcD, profile.cAtoms);
           timings.adelta += nowMs() - tAd;
         }
       } else {
-        const qMag = makeQMagnitudes(trg);
+        const qMag = trg ? makeQMagnitudes(trg) : core.qMagnitudesChunk(h, k, l, Bq, start, count);
         q = new Float64Array(count * 2);
-        qd = sub ? new Float64Array(count * 2) : null;
+        if (fullDelta) qd = new Float64Array(count * 2);
 
         for (let gi = 0; gi < profile.groups.length; gi++) {
           const g = profile.groups[gi];
@@ -408,44 +493,16 @@
             onStatus(`Computing A(hkl)${chunkTag}${gTag} ...`);
           }
           const tA = nowMs();
-          const qG = (
-            await runType3(
-              {
-                dim: 3,
-                isign: 1,
-                sourcesPacked: g.src,
-                targetsPacked: trg,
-                strengths: g.ones,
-              },
-              opts,
-              backend,
-              onStageTiming
-            )
-          ).out;
+          accumulateScaledComplex(q, await transform(g.src, g.ones), coeff);
           timings.a += nowMs() - tA;
-          accumulateScaledComplex(q, qG, coeff);
 
-          if (sub) {
+          if (fullDelta) {
             if (typeof onStatus === "function") {
               onStatus(`Computing Adelta(hkl)${chunkTag}${gTag} ...`);
             }
             const tAd = nowMs();
-            const qdG = (
-              await runType3(
-                {
-                  dim: 3,
-                  isign: 1,
-                  sourcesPacked: g.srcD,
-                  targetsPacked: trg,
-                  strengths: g.ones,
-                },
-                opts,
-                backend,
-                onStageTiming
-              )
-            ).out;
+            accumulateScaledComplex(qd, await transform(g.srcD, g.ones), coeff);
             timings.adelta += nowMs() - tAd;
-            accumulateScaledComplex(qd, qdG, coeff);
           }
         }
       }

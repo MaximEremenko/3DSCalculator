@@ -74,7 +74,7 @@ function parse(text) {
 async function compute(parsed, axes, extra = {}) {
   return ctx.DiffuseAmplitude.computeIntensity({
     parsed, h: axes[0], k: axes[1], l: axes[2], Bq: parsed.Bq, backend: "test",
-    sub: true, chunkSize: 37, runType3: directSum, ...extra,
+    sub: true, chunkSize: 37, runType3: directSum, deltaOnLattice: true, ...extra,
   });
 }
 
@@ -138,6 +138,25 @@ test("vacancies: Bragg points vanish and commensurate points keep |A|^2", async 
   assert.ok(bragg < 1e-9 * peak, `Bragg residual ${bragg}`);
   assert.ok(between < 1e-9 * peak, `commensurate mismatch ${between}`);
   assert.ok(previousError > 1e-3 * peak, "the old cell-origin formula should differ with vacancies");
+});
+
+test("A_delta is evaluated only on integer hkl when the steps are commensurate", async () => {
+  const supercell = [4, 3, 2];
+  const parsed = parse(rmc6f(supercell, () => false, 5));
+  const cases = [
+    { axes: supercell.map((n) => grid(-1, 1, 1 / n)), points: 3 * 3 * 3 },
+    // h commensurate, k and l not: only integer h rows are needed
+    { axes: [grid(-1, 1, 1 / 4), grid(-0.5, 0.7, 0.3), grid(0.1, 0.8, 0.35)], points: 3 * 5 * 3 },
+  ];
+  for (const { axes, points } of cases) {
+    const res = await compute(parsed, axes);
+    const ref = await reference(parsed, axes);
+    assert.equal(res.profile.deltaPoints, points);
+    assert.ok(maxRelDiff(res.I, ref.previous) < 1e-10);
+    const full = await compute(parsed, axes, { deltaOnLattice: false });
+    assert.equal(full.profile.deltaPoints, null);
+    assert.ok(maxRelDiff(full.I, res.I) < 1e-10);
+  }
 });
 
 test("average subtraction requires per-atom cell indices", async () => {
