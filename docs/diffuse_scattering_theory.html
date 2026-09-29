@@ -82,7 +82,7 @@
   <table>
     <tr><th>Control</th><th>Meaning</th></tr>
     <tr><td>Magnetic</td><td>Nuclear only, magnetic only, or nuclear + magnetic. It is enabled when a spin configuration is loaded and the radiation is neutron.</td></tr>
-    <tr><td>Magnetic Q=0</td><td>The perpendicular projection is undefined at Q = 0. Choose 0, as in RMCProfile, or the orientational average (2/3)|&Delta;<strong>M</strong>|&sup2;, as in Scatty.</td></tr>
+    <tr><td>Value at Q = 0</td><td>The perpendicular projection is undefined at Q = 0, and Q = 0 is the unscattered beam, which is never measured; any value there is a convention. Choose 0, as in RMCProfile, or (2/3)|&Delta;<strong>M</strong>|&sup2;, as in Scatty. The second is the orientational average of the limit Q &rarr; 0, since &lang;&delta;<sub>&alpha;&beta;</sub> &minus; Q&#770;<sub>&alpha;</sub>Q&#770;<sub>&beta;</sub>&rang; = (2/3)&delta;<sub>&alpha;&beta;</sub>. For a paramagnet it continues the neighbouring points, whereas 0 leaves a single hole that stretches a logarithmic color scale. With average subtraction on, &Delta;<strong>M</strong>(0) = 0, as at every reciprocal-lattice point, so both choices give 0.</td></tr>
     <tr><td>Paramagnet</td><td>Optionally subtracts the ideal paramagnet (2/3) &Sigma;<sub>j</sub> p&sup2;|&mu;<sub>j</sub>|&sup2; f<sub>j</sub>&sup2;, the scattering of uncorrelated spins (Scatty's TEMP_SUBTRACT). What remains is the spin-correlation signal.</td></tr>
   </table>
   <p>Averaging over nuclear cells removes only the ferromagnetic (k = 0) part of the average moment. Antiferromagnetic Bragg peaks, such as (&frac12; &frac12; &frac12;) of MnO, stay in the magnetic intensity.</p>

@@ -570,7 +570,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <div class="mag-controls">
             <div class="stack">
               <label>Contribution<select id="magMode"><option value="nuclear" selected>nuclear only</option><option value="magnetic">magnetic only</option><option value="both">nuclear + magnetic</option></select></label>
-              <label title="The perpendicular projection is undefined at Q = 0">Value at Q = 0<select id="magQ0"><option value="zero" selected>0 (RMCProfile)</option><option value="average">2/3 |M|&sup2; (Scatty)</option></select></label>
+              <label title="Q = 0 is the unscattered beam and M-perpendicular has no direction there, so any value is a convention. 0 follows RMCProfile; 2/3 |M|&sup2; is the orientational average of the Q &rarr; 0 limit (Scatty), continuous for a paramagnet. With Subtract average on, &Delta;M(0) = 0 and both give 0.">Value at Q = 0<select id="magQ0"><option value="zero" selected>0 (RMCProfile)</option><option value="average">2/3 |M|&sup2; (Scatty)</option></select></label>
             </div>
             <label class="switch" title="Scatty's TEMP_SUBTRACT"><input type="checkbox" id="magPara" data-bool><span>Subtract ideal paramagnet (2/3)&Sigma;&mu;&sup2;f&sup2;</span></label>
             <div id="magSpecies"></div>
