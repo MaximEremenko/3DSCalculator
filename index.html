@@ -2526,11 +2526,19 @@ bind();draw();
     }
   }
 
-  /* Example structures shipped in ./Examples */
-  var exampleButtons=document.querySelectorAll("[data-example]");
+  /* Example structures shipped in ./Examples. A page opened from disk
+     (file://) may not read them itself, so there the button opens the
+     file dialog instead. */
+  var exampleButtons=document.querySelectorAll("[data-example]"),fromDisk=location.protocol==="file:";
   exampleButtons.forEach(function(btn){
+    if(fromDisk)btn.title="Opens the file dialog: choose "+btn.dataset.example;
     btn.addEventListener("click",async function(){
       var url=btn.dataset.example,name=url.split("/").pop();
+      if(fromDisk){
+        status("This page was opened from disk, and browsers do not let it read "+url+" by itself: choose "+name+" in the Examples folder. Served over http (e.g. python -m http.server), the example buttons load in one click.","warn");
+        $("file").click();
+        return;
+      }
       exampleButtons.forEach(function(b){b.disabled=true;});
       status("Loading example "+name+" ...");
       try{

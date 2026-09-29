@@ -78,8 +78,10 @@ a small grid.
 
 Open `index.html` in a modern browser. All local modules
 load through plain script tags (no local `fetch` or workers), so opening the
-file directly from disk (`file://`) works in practice; a local web server is
-the most reliable route:
+file directly from disk (`file://`) works in practice. From disk, the browser
+does not let the page read `Examples/` by itself, so the example buttons open
+the file dialog instead; pick the file from the `Examples` folder. A local web
+server is the most reliable route and loads examples in one click:
 
 ```
 python -m http.server
