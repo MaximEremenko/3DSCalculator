@@ -27,7 +27,9 @@ The `docs/` directory contains the full documentation set
   of magnetic RMC), LAMMPS data files (`.data` / `.lmp` / `.lammps`,
   including `atom_style spin`), unified structure HDF5 (`.h5` / `.hdf5`),
   and Scatty spin or atom files (`.txt`), loaded via drag-and-drop or the
-  file picker (several files at once).
+  file picker (several files at once). Intensity data as `h k l I` lists
+  (Scatty `_sc_list.txt`, Spinteract single-crystal data) load straight
+  into the viewers.
 - **Compute backends**: the default, `wgpuNUFFT type-1 (WebGPU)`, evaluates
   the uniform `h,k,l` grid as a type-1 NUFFT on the GPU (bundled
   [wgpu-web](https://github.com/MaximEremenko/wgpuNUFFT)), with all phases

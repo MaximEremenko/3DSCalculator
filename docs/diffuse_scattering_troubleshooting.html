@@ -87,6 +87,15 @@
   </ul>
 </section>
 <section>
+  <h2>A File Is Not Recognized</h2>
+  <ul>
+    <li>The calculator reads <code>.rmc6f</code> structures, unified <code>.h5</code>, LAMMPS data, Scatty spin or atom files, RMCProfile spin <code>.cfg</code> files with their <code>.dat</code>, and <code>h k l I</code> intensity lists. Other files are refused with the list of supported formats.</li>
+    <li>For Scatty, load <code>..._spins_NN.txt</code> or <code>..._atoms_NN.txt</code> to compute, or <code>..._sc_list.txt</code> to view Scatty's intensities. <code>scatty_config.txt</code> and <code>..._scatty_info.txt</code> hold only settings.</li>
+    <li>For Spinteract, the <code>..._config.txt</code> file supplies the cell for its data file; it contains no atoms, so there is nothing to compute from it.</li>
+    <li>An intensity list is refused when its points do not lie on a regular <em>h</em>, <em>k</em>, <em>l</em> grid, for example Scatty planes along a direction such as [1 1 0].</li>
+  </ul>
+</section>
+<section>
   <h2>Magnetic Files Are Refused</h2>
   <ul>
     <li><em>Load the structure (.rmc6f) before its spin configuration</em>: select the <code>.rmc6f</code>, spin <code>.cfg</code> and <code>.dat</code> together, or load the <code>.rmc6f</code> first.</li>

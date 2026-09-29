@@ -119,6 +119,17 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   </table>
   <p>The <code>log10</code>/<code>linear</code> choice is the <strong>Scale</strong> in the Slice section; the next compute keeps it. See <a href="diffuse_scattering_theory.html">Theory</a> for the equations behind these controls.</p>
 </section>
+<section id="intensity-data">
+  <h2>Loading Intensity Data</h2>
+  <p>Besides structures, the calculator reads reciprocal-space intensities given as lines of <code>h k l I</code>, with any further columns (errors, weights) ignored. Such data go straight into the three views and the exports, with no structure and no computation:</p>
+  <ul>
+    <li>Scatty's calculated intensities, <code>[title]_[name]_sc_list.txt</code>.</li>
+    <li>Spinteract single-crystal data, such as <code>MnO_xtal_data_01.txt</code>.</li>
+  </ul>
+  <p>The points must lie on a regular grid along <em>h</em>, <em>k</em> and <em>l</em>; grid points without a line (masked data) stay empty in the maps. A single plane, such as Scatty's (hk0), opens in axis mode on that plane. Files of hundreds of megabytes are read in chunks.</p>
+  <p>The 3D views need the unit cell. Load the matching Spinteract configuration (<code>MnO_config.txt</code> for <code>MnO_xtal_data_01.txt</code>, before or together with the data) or a structure; otherwise the axes are drawn as cubic in reciprocal-lattice units. The grid fields take the data's grid, so a structure computed next lands on the same points.</p>
+  <p>Scatty's settings files (<code>scatty_config.txt</code>, <code>..._scatty_info.txt</code>) hold no structure or data and are refused with a hint.</p>
+</section>
 <section id="magnetic-input">
   <h2>Magnetic Input</h2>
   <p>Magnetic scattering needs a moment on each magnetic atom. Three sources are read:</p>

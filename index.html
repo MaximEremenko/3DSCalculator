@@ -507,7 +507,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
         <div class="card-head"><span class="step">1</span><h3 id="hStructure">Structure</h3></div>
         <div id="drop" class="drop" tabindex="0" role="button" aria-label="Load structure files">
           <span class="drop-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
-          <span class="drop-text"><span><strong>Drop files here</strong> or <span class="link">browse</span></span><span class="drop-formats">.rmc6f &middot; unified .h5 &middot; LAMMPS &middot; Scatty &middot; RMCProfile spins (.cfg + .dat)</span></span>
+          <span class="drop-text"><span><strong>Drop files here</strong> or <span class="link">browse</span></span><span class="drop-formats">.rmc6f &middot; unified .h5 &middot; LAMMPS &middot; Scatty &middot; RMCProfile spins (.cfg + .dat) &middot; h k l I data</span></span>
           <input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt,.cfg,.dat" multiple hidden />
         </div>
         <div class="examples"><span>Try</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
@@ -828,6 +828,7 @@ document.querySelectorAll("input[type=checkbox][data-bool]").forEach(function(el
 <script src="./js/magnetic_form_factors.js"></script>
 <script src="./js/scatty_reader.js"></script>
 <script src="./js/rmcprofile_magnetic.js"></script>
+<script src="./js/intensity_list_reader.js"></script>
 <script src="./js/type1_grid.js"></script>
 <script src="./js/wgpu_type1.js"></script>
 <script>
@@ -1443,7 +1444,7 @@ function chooseStrides(shape,maxVox){const nh=shape[0],nk=shape[1],nl=shape[2],l
 function percentileSorted(sorted,pct){if(!sorted.length)return 0;const p=Math.max(0,Math.min(100,pct)),q=(p/100)*(sorted.length-1),i0=Math.floor(q),i1=Math.ceil(q),t=q-i0;return sorted[i0]*(1-t)+sorted[i1]*t;}
 /* Bq with rounding-level entries (cos 90 deg terms) set to zero, so an orthogonal cell gives the exact rectilinear grid that Plotly isosurfaces need. */
 function gridBq(Bq){const scale=Math.max(...Bq.map(r=>Math.max(...r.map(Math.abs))));return Bq.map(r=>r.map(v=>Math.abs(v)<=1e-9*scale?0:v));}
-function buildVolumeSample(res,maxVox,mode){const Bqg=gridBq(res.Bq),[sh,sk,sl]=chooseStrides(res.shape,maxVox),hs=downsampleIndices(res.shape[0],sh),ks=downsampleIndices(res.shape[1],sk),ls=downsampleIndices(res.shape[2],sl),total=hs.length*ks.length*ls.length,x=new Float32Array(total),y=new Float32Array(total),z=new Float32Array(total),hklH=new Float32Array(total),hklK=new Float32Array(total),hklL=new Float32Array(total),v=new Float32Array(total);let p=0,mn=Infinity,mx=-Infinity;for(const ih of hs)for(const ik of ks)for(const il of ls){const h=res.h[ih],k=res.k[ik],l=res.l[il],q=hklToQ(h,k,l,Bqg),sv=scaledVal(res.I[idx(res.shape,ih,ik,il)],mode);x[p]=q[0];y[p]=q[1];z[p]=q[2];hklH[p]=h;hklK[p]=k;hklL[p]=l;v[p]=Number.isFinite(sv)?sv:0;if(v[p]<mn)mn=v[p];if(v[p]>mx)mx=v[p];p++;}if(!Number.isFinite(mn)||!Number.isFinite(mx)){mn=0;mx=1;}return{x,y,z,hklH,hklK,hklL,v,min:mn,max:mx,count:total,strides:[sh,sk,sl]};}
+function buildVolumeSample(res,maxVox,mode){const Bqg=gridBq(res.Bq),[sh,sk,sl]=chooseStrides(res.shape,maxVox),hs=downsampleIndices(res.shape[0],sh),ks=downsampleIndices(res.shape[1],sk),ls=downsampleIndices(res.shape[2],sl),total=hs.length*ks.length*ls.length,x=new Float32Array(total),y=new Float32Array(total),z=new Float32Array(total),hklH=new Float32Array(total),hklK=new Float32Array(total),hklL=new Float32Array(total),v=new Float32Array(total);let p=0,mn=Infinity,mx=-Infinity;for(const ih of hs)for(const ik of ks)for(const il of ls){const h=res.h[ih],k=res.k[ik],l=res.l[il],q=hklToQ(h,k,l,Bqg),sv=scaledVal(res.I[idx(res.shape,ih,ik,il)],mode);x[p]=q[0];y[p]=q[1];z[p]=q[2];hklH[p]=h;hklK[p]=k;hklL[p]=l;if(Number.isFinite(sv)){v[p]=sv;if(sv<mn)mn=sv;if(sv>mx)mx=sv;}else v[p]=NaN;p++;}if(!Number.isFinite(mn)||!Number.isFinite(mx)){mn=0;mx=1;}for(let i=0;i<total;i++)if(!Number.isFinite(v[i]))v[i]=mn;return{x,y,z,hklH,hklK,hklL,v,min:mn,max:mx,count:total,strides:[sh,sk,sl]};}
 function getVolumeSample(res,maxVox,mode){const key=[res.shape.join("x"),res.min,res.max,maxVox,mode].join("|");if(state.volCache&&state.volCache.key===key)return state.volCache;const sampled=buildVolumeSample(res,maxVox,mode);sampled.sorted=Array.from(sampled.v).sort((a,b)=>a-b);state.volCache={key,...sampled};return state.volCache;}
 function isNonOrthBq(Bq){if(!Array.isArray(Bq))return false;const a=mul([1,0,0],Bq),b=mul([0,1,0],Bq),c=mul([0,0,1],Bq),na=normVec(a),nb=normVec(b),nc=normVec(c);if(!(na>1e-12&&nb>1e-12&&nc>1e-12))return false;const ab=Math.abs(dot(a,b)/(na*nb)),ac=Math.abs(dot(a,c)/(na*nc)),bc=Math.abs(dot(b,c)/(nb*nc));return ab>1e-3||ac>1e-3||bc>1e-3;}
 function sampleHklCustom(sample){const cd=new Array(sample.count);for(let i=0;i<sample.count;i++)cd[i]=[sample.hklH[i],sample.hklK[i],sample.hklL[i]];return cd;}
@@ -1588,7 +1589,8 @@ setPlot3dStatus("Rendering 3D view ...");
 const plotly=await ensurePlotly(),res=state.res,mode=$("scale").value,maxVox=Math.max(5000,Math.floor(Number($("voxelCap").value)||220000)),isoPct=Math.max(50,Math.min(99.99,Number($("isoPct").value)||95)),isoCount=Math.max(1,Math.min(12,Math.floor(Number($("isoCount").value)||4))),showIso=$("showIso3d").value==="1",showPlane=$("showPlane3d").value==="1";
 const isoTraces=[];
 let isoMsg="iso=off";
-if(showIso){
+if(showIso&&res.shape.some(n=>n<2))isoMsg="iso=off (the data is a single plane, which has no isosurfaces)";
+else if(showIso){
 setPlot3dStatus("Rendering 3D isosurface ...");
 const sample=getVolumeSample(res,maxVox,mode);
 let isoMin=percentileSorted(sample.sorted,isoPct),isoMax=sample.max;
@@ -1938,9 +1940,10 @@ pushSliceWindow();
 function base(){const m=$("baseName").value.trim();if(m)return m;return state.rmc?state.rmc.file.replace(/\.(?:rmc6f|h5|hdf5|data|lmp|lammps)$/i,"")+"_diffuse":"diffuse_result";}
 function saveText(name,text,mime){const b=new Blob([text],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);} 
 function saveDat(){if(!state.res)return;const r=state.res,[nh,nk,nl]=r.shape,out=["# h k l intensity"];for(let i=0;i<nh;i++)for(let j=0;j<nk;j++)for(let m=0;m<nl;m++){out.push(`${r.h[i]} ${r.k[j]} ${r.l[m]} ${r.I[idx(r.shape,i,j,m)]}`);}saveText(`${base()}.dat`,out.join("\n"),"text/plain;charset=utf-8");}
-function saveJson(){if(!state.res||!state.rmc)return;const r=state.res,p={sourceFile:state.rmc.file,atoms:state.rmc.atoms,supercell:state.rmc.hasSupercell===false?null:state.rmc.super,cellDeg:state.rmc.cellDeg,shape:r.shape,hAxis:r.h,kAxis:r.k,lAxis:r.l,Bq:r.Bq,Bp:r.Bp,hklToQ:"Q = [h,k,l] * Bq",minI:r.min,maxI:r.max,backend:r.backend,options:r.opts,timings:r.timings||null,intensity:Array.from(r.I)};saveText(`${base()}.json`,JSON.stringify(p),"application/json;charset=utf-8");}
+function saveJson(){if(!state.res)return;const r=state.res,m=r.backend==="data"?{}:(state.rmc||{}),p={sourceFile:m.file||r.file,atoms:m.atoms??null,supercell:m.super&&m.hasSupercell!==false?m.super:null,cellDeg:m.cellDeg||null,shape:r.shape,hAxis:r.h,kAxis:r.k,lAxis:r.l,Bq:r.Bq,Bp:r.Bp,hklToQ:"Q = [h,k,l] * Bq",minI:r.min,maxI:r.max,backend:r.backend,options:r.opts,timings:r.timings||null,intensity:Array.from(r.I)};saveText(`${base()}.json`,JSON.stringify(p),"application/json;charset=utf-8");}
 async function saveUnified(){
-if(!state.res||!state.rmc)return;
+if(!state.res)return;
+if(!state.rmc||state.res.backend==="data"){status("Unified .h5 export needs a computed result and its structure; export loaded intensity data as .dat, .json, .vtk or .cube.","warn");return;}
 const button=$("saveUnified");button.disabled=true;
 try{
 status("Writing unified HDF5 data ...");
@@ -2104,11 +2107,17 @@ if(/\.(?:h5|hdf5)$/i.test(f.name)){
 const h5=await ensureUnifiedH5(),bytes=new Uint8Array(await f.arrayBuffer()),model=window.UnifiedH5.readStructure(h5,bytes,f.name);
 parsed=parseUnifiedRMC(f.name,model);
 }else{
+if(window.IntensityListReader&&window.IntensityListReader.detect(await f.slice(0,65536).text())){await loadIntensityList(f);return;}
 const text=await f.text();
 if(window.RmcMagnetic&&window.RmcMagnetic.detectSpinConfiguration(text)){attachRmcSpins(f.name,text);return;}
 if(/\.cfg$/i.test(f.name))throw new Error(`${f.name} is not an RMCProfile spin configuration; load atomic configurations as .rmc6f.`);
 if(/\.dat$/i.test(f.name)&&!/LAMMPS\s+data\s+file/i.test(text.slice(0,512))){loadMagnetismDat(f.name,text);return;}
-parsed=window.ScattyReader&&window.ScattyReader.detect(text)?parseScatty(f.name,text):/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512))?parseLammps(f.name,text):parseRMC(f.name,text);
+const cfgKind=window.IntensityListReader?window.IntensityListReader.detectConfig(text):null;
+if(cfgKind==="spinteract"){useDataCell(f.name,text);return;}
+if(cfgKind)throw new Error(`${f.name} holds Scatty's calculation settings, not a structure. To compute, load the configuration (..._spins_NN.txt or ..._atoms_NN.txt); to view Scatty's intensities, load ..._sc_list.txt.`);
+const scatty=!!(window.ScattyReader&&window.ScattyReader.detect(text)),lammps=/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512));
+if(!scatty&&!lammps&&!/Atoms\s*:/.test(text.slice(0,200000)))throw new Error(`${f.name} is not a recognized file. Supported: .rmc6f structures, unified .h5, LAMMPS data, Scatty spin or atom files, RMCProfile spin .cfg with its .dat, and h k l I intensity lists (Scatty ..._sc_list.txt, Spinteract data).`);
+parsed=scatty?parseScatty(f.name,text):lammps?parseLammps(f.name,text):parseRMC(f.name,text);
 }
 if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
 if(state.rmcMagnetism&&state.rmcMagnetism.types&&!state.rmcMagnetism.types.every(t=>parsed.present.some(e=>e.toLowerCase()===String(t).toLowerCase())))state.rmcMagnetism=null;
@@ -2174,6 +2183,27 @@ box.innerHTML=`<table class="magTable"><tr><th title="magnetic species (atom typ
 box.querySelectorAll("[data-k]").forEach(elm=>elm.addEventListener("change",()=>{const sp=mag.species[Number(elm.dataset.t)],k=elm.dataset.k,v=Number(elm.value);if(k==="scale"){if(Number.isFinite(v))sp.scale=v;}else if(k==="c2"){if(Number.isFinite(v))sp.formFactor={...sp.formFactor,c2:v};}else if(elm.value==="file"){sp.formFactor={...sp.fileFormFactor};sp.formFactorSource=scatty?"file":"dat";}else{const ion=magneticIonsFor(sp)[v];if(ion){sp.ion=ion.ion;sp.formFactor={j0:ion.j0,j2:ion.j2,c2:sp.formFactor.c2||0};sp.formFactorSource="table";}}renderMagneticSpecies();updateMagneticUi();}));}
 function attachRmcSpins(name,text){const r=state.rmc;if(!r)throw new Error(`Load the structure (.rmc6f) before its spin configuration ${name}.`);const cfg=window.RmcMagnetic.parseSpinConfiguration(text);r.magnetic=window.RmcMagnetic.attachSpins(r,cfg,state.rmcMagnetism);r.spinConfiguration={name,cfg};if($("magMode").value==="nuclear")$("magMode").value="both";renderMagneticSpecies();updateMagneticUi();const notes=r.magnetic.notes,other=/\.rmc6f$/i.test(r.file||"")?"":" Spins were mapped by atom-type order onto a structure that is not an .rmc6f.";status(`Attached ${name}: ${magneticSummary(r)}, ${state.rmcMagnetism?`moments and form factors from ${state.rmcMagnetism.file}`:"1 muB moments and tabulated form factors until the .dat with the MAGNETISM block is loaded"}.${other}${notes.length?` Notes: ${notes.join("; ")}.`:""}`,notes.length||other?"warn":"ok");}
 function loadMagnetismDat(name,text){const block=window.RmcMagnetic.parseMagnetismBlock(text);if(!block){status(`${name} has no active MAGNETISM block; nothing to apply.`,"warn");return;}block.file=name;state.rmcMagnetism=block;const r=state.rmc,moments=block.moments&&block.moments.length?`moments ${block.moments.join(", ")} muB`:"no MAGNETIC_MOMENTS",summary=`${moments}, ${block.formFactors.length} FORM_FACTOR record(s)`;if(r&&r.spinConfiguration){r.magnetic=window.RmcMagnetic.attachSpins(r,r.spinConfiguration.cfg,block);renderMagneticSpecies();updateMagneticUi();const notes=r.magnetic.notes;status(`Applied MAGNETISM from ${name} (${summary}) to ${r.spinConfiguration.name}.${notes.length?` Notes: ${notes.join("; ")}.`:""}`,notes.length?"warn":"ok");}else status(`Read MAGNETISM from ${name}: ${summary}. It applies to the next RMCProfile spin configuration.`,"ok");}
+/* Intensity data (h k l I lists): shown in the viewers without a structure */
+/* Cell for loaded data: a Spinteract configuration whose name starts like the data file (MnO_config.txt for MnO_xtal_data_01.txt), else the loaded structure, else cubic axes in r.l.u. */
+function dataGeometry(name){const c=state.dataCell,stem=c?c.name.replace(/(?:[_-]?config)?\.[^.]*$/i,"").toLowerCase():"";if(c&&String(name||"").toLowerCase().startsWith(stem)){const g=window.RMC6fReader.cellGeometry(c.cell);return{Bq:g.Bq,Bp:g.Bp,source:c.name};}if(state.rmc&&state.rmc.Bq)return{Bq:state.rmc.Bq,Bp:state.rmc.Bp,source:state.rmc.file,unused:c?c.name:null};const g=window.RMC6fReader.cellGeometry([2*Math.PI,2*Math.PI,2*Math.PI,90,90,90]);return{Bq:g.Bq,Bp:g.Bp,source:null,unused:c?c.name:null};}
+function resetResultView(){state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};}
+async function loadIntensityList(f){const R=window.IntensityListReader,parser=R.createParser(),reader=f.stream().getReader(),decoder=new TextDecoder(),size=Math.max(1,f.size||1);let read=0,shown=0;
+status(`Reading intensity data ${f.name} ...`);
+for(;;){const chunk=await reader.read();if(chunk.done)break;read+=chunk.value.length;parser.push(decoder.decode(chunk.value,{stream:true}));const now=performance.now();if(now-shown>200){shown=now;status(`Reading intensity data ${f.name}: ${Math.round(100*read/size)}% (${parser.count().toLocaleString("en-US")} points) ...`);await new Promise(r=>setTimeout(r,0));}}
+parser.push(decoder.decode());const rows=parser.finish();
+status(`Placing ${rows.count.toLocaleString("en-US")} points of ${f.name} on their grid ...`);await new Promise(r=>setTimeout(r,0));
+const grid=R.buildGrid(rows),geo=dataGeometry(f.name);
+state.res={file:f.name,shape:grid.shape,h:grid.h,k:grid.k,l:grid.l,Bq:geo.Bq,Bp:geo.Bp,I:grid.I,min:grid.min,max:grid.max,backend:"data",opts:{source:"intensity list",points:grid.points,masked:grid.masked,duplicates:grid.duplicates,skippedLines:rows.skipped,cellSource:geo.source||"none (cubic axes in r.l.u.)"},timings:{}};
+for(const [a,v] of [["h",grid.h],["k",grid.k],["l",grid.l]]){$(a+"Min").value=String(v[0]);$(a+"Max").value=String(v[v.length-1]);if(v.length>1)$(a+"Step").value=formatAxisStep((v[v.length-1]-v[0])/(v.length-1));}
+updateGridSummary();resetResultView();state.pendingPlane=null;
+const flat=grid.shape.indexOf(1);if(flat>=0){$("sliceMode").value="axis";$("axis").value="hkl"[flat];}
+$("scale").value=grid.min>0&&grid.max/grid.min>1e3?"log":"linear";
+syncResultControls();updateSliceUI();draw();schedule3dRender(true,0);
+const span=(n,v)=>`${n} ${v[0]}...${v[v.length-1]}`,masked=grid.masked?`, ${(100*grid.masked/grid.I.length).toFixed(1)}% of the grid masked`:"",skipped=rows.skipped?` ${rows.skipped} non-data line(s) skipped.`:"";
+status(`Loaded intensity data ${f.name}: ${grid.shape.join(" × ")} grid (${grid.points.toLocaleString("en-US")} points${masked}; ${span("h",grid.h)}, ${span("k",grid.k)}, ${span("l",grid.l)}). ${geo.source?`Cell from ${geo.source}.`:"No cell is loaded, so the 3D views use cubic axes in r.l.u.; load the matching Spinteract _config.txt or structure for the true geometry."}${geo.unused?` (${geo.unused} was not used: its name does not match.)`:""}${skipped}`,geo.source?"ok":"warn");}
+function useDataCell(name,text){const cfg=window.IntensityListReader.parseConfig(text);if(!cfg)throw new Error(`${name}: no valid CELL line.`);state.dataCell={name,cell:cfg.cell};const r=state.res,applies=!!(r&&r.backend==="data");
+if(applies){const g=window.RMC6fReader.cellGeometry(cfg.cell);r.Bq=g.Bq;r.Bp=g.Bp;r.opts.cellSource=name;resetResultView();updateSliceUI();draw();schedule3dRender(true,0);}
+status(`Cell ${cfg.cell.slice(0,3).join(" × ")} Å, ${cfg.cell.slice(3).map(v=>v+"°").join(" ")} from ${name}${cfg.title?` (${cfg.title})`:""}${applies?`, applied to ${r.file}`:"; it applies to intensity data loaded next"}. A Spinteract configuration holds no atoms: to compute, load a structure or spin file.`,"ok");}
 async function onFiles(list){const rank=f=>/\.cfg$/i.test(f.name)?2:/\.dat$/i.test(f.name)?1:0,files=Array.from(list||[]).sort((a,b)=>rank(a)-rank(b));for(const f of files)await onFile(f);}
 function magneticSummary(r){const m=r.magnetic,n=Array.from(m.speciesOfAtom).filter(v=>v>=0).length;return`${n} magnetic moments (${m.species.map(sp=>sp.label+(sp.formFactor.c2?`, C2 ${sp.formFactor.c2}`:"")).join("; ")})`;}
 function updateMagneticUi(){const mode=$("magMode");if(!mode)return;const r=state.rmc,mag=!!(r&&r.magnetic),neutron=(($("scatterType")&&$("scatterType").value)||"neutron")==="neutron";for(const o of mode.options)if(o.value!=="nuclear")o.disabled=!mag||!neutron;if(!mag||!neutron)mode.value="nuclear";$("magQ0").disabled=$("magPara").disabled=mode.value==="nuclear";$("magInfo").textContent=mag?magneticSummary(r):"no spins loaded";if($("magBlock"))$("magBlock").classList.toggle("has-spins",mag);}
