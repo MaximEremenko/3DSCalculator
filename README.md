@@ -74,6 +74,9 @@ Notes:
 - **Internet is required on first load** for the CDN scripts: the
   WebGPU-NUFFT compute kernels (jsDelivr) and Plotly (cdn.plot.ly, loaded
   on demand). HDF5 support (`h5wasm`) is bundled locally in `js/`.
+  The NUFFT and FFT libraries are pinned (WebGPU-NUFFT `v0.1.0`,
+  WebGPU-FFT commit `fa45c93`), so results do not change when those
+  repositories move on.
 - The WebGPU backend requires a WebGPU-capable browser (e.g. current
   Chrome or Edge). Other browsers automatically use the CPU FFT backend.
 

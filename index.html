@@ -957,8 +957,8 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
   </button>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@main/lib/type3_cpu_like.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@main/lib/type3_webgpu_gpufft.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@v0.1.0/lib/type3_cpu_like.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@v0.1.0/lib/type3_webgpu_gpufft.js"></script>
 <script src="./js/diffuse_core.js"></script>
 <script src="./js/diffuse_amplitude.js"></script>
 <script src="./js/rmc6f_reader.js"></script>
@@ -969,9 +969,10 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
 <script>
 "use strict";
 const $=id=>document.getElementById(id), PI2=2*Math.PI, EPS=1e-15;
-const WEBGPU_NUFFT_CDN_BASE="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@main";
+// Pinned library versions: bump deliberately, never track a branch.
+const WEBGPU_NUFFT_CDN_BASE="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-NUFFT@v0.1.0";
 const WEBGPU_WGSL_BASE=WEBGPU_NUFFT_CDN_BASE;
-const WEBGPUFFT_CDN_BASE="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-FFT@main";
+const WEBGPUFFT_CDN_BASE="https://cdn.jsdelivr.net/gh/MaximEremenko/WebGPU-FFT@fa45c93f524a69a96c9f55acfad865226bfccd29";
 const WEBGPUFFT_WEB_API_MODULES=[`${WEBGPUFFT_CDN_BASE}/web/lib_api.js`];
 const WEBGPUFFT_SRC_INDEX_MODULES=[`${WEBGPUFFT_CDN_BASE}/src/index.js`];
 const WEBGPUFFT_NOMODULE_SCRIPTS=[`${WEBGPUFFT_CDN_BASE}/web/lib_api_nomodule.js`];
