@@ -2062,8 +2062,9 @@ try{
 status("Writing unified HDF5 data ...");
 const h5=await ensureUnifiedH5(),r=state.res,ah=axisUniformInfo(r.h),ak=axisUniformInfo(r.k),al=axisUniformInfo(r.l);
 if(!ah.uniform||!ak.uniform||!al.uniform)throw new Error("Unified data output requires uniform H, K, and L axes.");
-const s=state.rmc.super,c=state.rmc.cellDeg,parentCell=[c[0]/s[0],c[1]/s[1],c[2]/s[2],c[3],c[4],c[5]],scattering=r.opts&&r.opts.scattering&&r.opts.scattering.type||"unknown";
-const bytes=window.UnifiedH5.writeData(h5,{dims:r.shape,corner:[r.h[0],r.k[0],r.l[0]],vectors:[[ah.step,0,0],[0,ak.step,0],[0,0,al.step]],values:r.I,cell:parentCell,axesType:"hkl",content:"intensity",radiation:scattering,experiment:"calculated",style:"single_diffraction",creationMethod:"Diffuse_Scattering_RMC6f unified data export"});
+const s=state.rmc.super,c=state.rmc.cellDeg,parentCell=[c[0]/s[0],c[1]/s[1],c[2]/s[2],c[3],c[4],c[5]],o=r.opts||{},scattering=o.scattering&&o.scattering.type||"unknown",sm=o.smoothing||{};
+const settings=[`${scattering} ${o.scattering&&o.scattering.model||""}`.trim(),o.subtractAverage?"average subtracted":"average kept",`normalization ${o.intensityNormalization||"none"}`,sm.enabled?`smoothing ${sm.type}`:"no smoothing",`backend ${r.backend} tol ${o.tol}`];
+const bytes=window.UnifiedH5.writeData(h5,{dims:r.shape,corner:[r.h[0],r.k[0],r.l[0]],vectors:[[ah.step,0,0],[0,ak.step,0],[0,0,al.step]],values:r.I,cell:parentCell,axesType:"hkl",content:"intensity",radiation:scattering,radiationSymbol:"none",withBragg:o.subtractAverage?"bragg_subtracted":"bragg_present",experiment:"calculated",style:"single_diffraction",authorName:"unknown",creationMethod:`3DSCalculator (${settings.join("; ")})`});
 saveText(`${base()}_unified.h5`,bytes,"application/x-hdf5");
 status("Saved unified HDF5 diffuse data.","ok");
 }catch(err){status(`Unified HDF5 export failed: ${err.message}`,"err");}
