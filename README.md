@@ -27,7 +27,9 @@ The `docs/` directory contains the full documentation set
   of magnetic RMC), LAMMPS data files (`.data` / `.lmp` / `.lammps`,
   including `atom_style spin`), unified structure HDF5 (`.h5` / `.hdf5`),
   and Scatty spin or atom files (`.txt`), loaded via drag-and-drop or the
-  file picker (several files at once). Intensity data as `h k l I [σ]`
+  file picker (several files at once). Several configurations of one
+  system selected together (RMC runs, Monte Carlo or MD snapshots) are
+  averaged. Intensity data as `h k l I [σ]`
   lists (Scatty `_sc_list.txt`, Spinteract single-crystal data) load
   straight into the viewers.
 - **Comparison with data**: a calculation is fitted to loaded intensity
@@ -48,7 +50,8 @@ The `docs/` directory contains the full documentation set
   computation) with a pinned Compute button (`Ctrl+Enter`), three
   resizable and maximizable views, and a View panel for slice, color, 3D and export
   tools; light and dark themes; example structures one click away
-  (including MnO spin configurations in Scatty and RMCProfile formats, and
+  (including MnO spin configurations in Scatty and RMCProfile formats,
+  paramagnetic MnO at 160 K as 8 Monte Carlo snapshots, and
   LAMMPS spin data for bcc Fe and a skyrmion film); a drawer layout for
   tablets and phones.
 - **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
