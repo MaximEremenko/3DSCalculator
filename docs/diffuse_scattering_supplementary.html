@@ -48,7 +48,7 @@
   <h2>Backend Stack</h2>
   <ul>
     <li><strong>WebGPU-FFT</strong> — Maksim Eremenko's WebGPU FFT library used by the WebGPU execution path.</li>
-    <li><strong>WebGPU-NUFFT</strong> — type-3 NUFFT implementation and WebGPU bridge. In the UI this appears as <code>Type-3 + webgpufft (WebGPU)</code>, <code>type3NufftCpu (CPU FFT)</code>, and <code>type3NufftCpuDirect</code>.</li>
+    <li><strong>WebGPU-NUFFT</strong> — type-3 NUFFT implementation and WebGPU bridge. In the UI this appears as <code>Type-3 + webgpufft (WebGPU)</code>, <code>type3NufftCpu (CPU FFT)</code>, <code>type3NufftCpuDirect (CPU f64 NUFFT)</code>, and <code>Exact sum (CPU f64, small grids)</code> (the library's <code>type3NufftDirectSum</code>).</li>
     <li><strong>Plotly.js</strong> — interactive 3D rendering for slice-plane and isosurface views.</li>
   </ul>
 </section>
@@ -61,7 +61,7 @@
     <li>subtraction- or cancellation-sensitive features</li>
     <li>backend-to-backend comparisons</li>
   </ul>
-  <p>For important scientific checks, compare against <code>type3NufftCpuDirect</code> and verify that the qualitative interpretation is stable with respect to backend and grid settings.</p>
+  <p>For important scientific checks, compare against the <code>Exact sum</code> backend on a small grid and verify that the qualitative interpretation is stable with respect to backend and grid settings.</p>
 </section>
 <section>
   <h2>Scattering Table Families</h2>

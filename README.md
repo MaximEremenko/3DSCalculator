@@ -28,7 +28,8 @@ The `docs/` directory contains the full documentation set
   (`.h5` / `.hdf5`), loaded via drag-and-drop or file picker.
 - **Compute backends**: type-3 NUFFT on a user-defined `h,k,l` grid with
   three selectable engines — WebGPU (`Type-3 + webgpufft`), CPU FFT
-  (`type3NufftCpu`), and direct CPU summation (`type3NufftCpuDirect`).
+  (`type3NufftCpu`), and a CPU f64 NUFFT (`type3NufftCpuDirect`) — plus an
+  exact CPU f64 direct sum for small validation grids.
   If WebGPU is unavailable the app falls back to the CPU FFT backend
   automatically; large grids on the WebGPU path run as chunked NUFFT passes.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray
@@ -50,8 +51,10 @@ The `docs/` directory contains the full documentation set
   3D views.
 
 **Precision note**: the WebGPU FFT/NUFFT stack and the CPU FFT path use
-`fp32` arithmetic. For critical scientific checks, compare against the
-`type3NufftCpuDirect` backend.
+`fp32` arithmetic. `type3NufftCpuDirect` runs the NUFFT in `fp64`, with an
+accuracy set by the tolerance (1e-9 by default); it is not an exact sum.
+For critical scientific checks, compare against the `Exact sum` backend on
+a small grid.
 
 ## Getting Started
 
