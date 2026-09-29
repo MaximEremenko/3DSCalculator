@@ -188,6 +188,26 @@
     const key = String(token), label = maps.labels.get(key) || key;
     return element(label) || maps.resolved.get(key) || "Type" + key;
   }
+  // Column layout of atom_style spin rows. LAMMPS since its 2020 releases
+  // (AtomVec refactor of 26 Nov 2019) reads "id type x y z spx spy spz sp";
+  // the SPIN package before that read "id type sp x y z spx spy spz". The
+  // direction (written normalized by write_data) is the unit-length triplet;
+  // the write_data version date in the header breaks ties.
+  function spinLayout(rows, header) {
+    const unit = function (p, c) {
+      const v = [Number(p[c]), Number(p[c + 1]), Number(p[c + 2])];
+      return v.every(Number.isFinite) && Math.abs(Math.hypot(v[0], v[1], v[2]) - 1) < 1e-5;
+    };
+    let current = 0, legacy = 0;
+    rows.slice(0, 200).forEach(function (row) {
+      const p = row.body.split(/\s+/);
+      if (p.length >= 9) { if (unit(p, 5)) current++; if (unit(p, 6)) legacy++; }
+    });
+    const year = Number((/version\s+\d+\s+[A-Za-z]+\s+(\d{4})/.exec(header || "") || [])[1]);
+    const isLegacy = legacy > current || (legacy === current && Number.isFinite(year) && year > 0 && year < 2020);
+    return isLegacy ? { x: 3, dir: 6, mag: 2, legacy: true } : { x: 2, dir: 5, mag: 8, legacy: false };
+  }
+
   // Magnetic species (one per element with nonzero spins) for atom_style spin.
   function spinStructure(atoms) {
     if (!atoms.some(function (a) { return a.moment && (a.moment[0] || a.moment[1] || a.moment[2]); })) return null;
@@ -215,16 +235,22 @@
     const unitInfo = units(lines, warnings), cell = box(lines, unitInfo.factor), section = findSection(lines, "Atoms");
     if (!section) throw new Error("LAMMPS data: missing Atoms section");
     const rows = sectionRows(lines, section, atomCount, "Atoms"), style = atomStyle(section, rows, warnings), fields = STYLE_FIELDS[style], maps = typeMaps(lines, typeCount, unitInfo, warnings);
+    const layout = style === "spin" ? spinLayout(rows, lines[0]) : null;
+    if (layout && layout.legacy) warnings.push("Spins read in the pre-2020 LAMMPS layout (id type sp x y z spx spy spz).");
+    const xcol = layout ? layout.x : fields[1];
     const atoms = rows.map(function (row) {
       const p = row.body.split(/\s+/);
-      if (p.length < fields[1] + 3) throw new Error("LAMMPS data: short atom row at line " + row.line);
+      if (p.length < xcol + 3) throw new Error("LAMMPS data: short atom row at line " + row.line);
       const id = Number(p[0]);
       if (!Number.isInteger(id) || id < 0) throw new Error("LAMMPS data: invalid atom ID at line " + row.line);
-      const point = [p[fields[1]], p[fields[1] + 1], p[fields[1] + 2]].map(function (v) { return number(v, "coordinate at line " + row.line) * unitInfo.factor; });
-      // atom_style spin: spx spy spz (unit vector) and sp (magnitude, muB)
-      const moment = style === "spin" && p.length >= fields[1] + 7
-        ? [5, 6, 7].map(function (c) { return number(p[c], "spin at line " + row.line) * number(p[8], "spin magnitude at line " + row.line); })
-        : null;
+      const point = [p[xcol], p[xcol + 1], p[xcol + 2]].map(function (v) { return number(v, "coordinate at line " + row.line) * unitInfo.factor; });
+      // atom_style spin: the direction is normalized as LAMMPS does, times sp (muB)
+      let moment = null;
+      if (layout && p.length >= 9) {
+        const d = [0, 1, 2].map(function (c) { return number(p[layout.dir + c], "spin at line " + row.line); });
+        const sp = number(p[layout.mag], "spin magnitude at line " + row.line), n = Math.hypot(d[0], d[1], d[2]);
+        moment = n > 0 ? d.map(function (v) { return v / n * sp; }) : [0, 0, 0];
+      }
       return { id: id, element: resolveType(p[fields[0]], maps), point: wrappedPoint(point, cell), moment: moment };
     }).sort(function (a, b) { return a.id - b.id; });
     const n = atoms.length, x = new Float64Array(n), y = new Float64Array(n), z = new Float64Array(n), xa = new Float64Array(n), ya = new Float64Array(n), za = new Float64Array(n), dx = new Float64Array(n), dy = new Float64Array(n), dz = new Float64Array(n), elements = new Array(n);
