@@ -105,6 +105,7 @@
 <section>
   <h2>Display Scale</h2>
   <p>The calculator exposes <code>log10</code> and <code>linear</code> viewer scales.</p>
+  <p>On the <code>log10</code> scale the color range starts at the 1st percentile of the positive intensities, and no lower than 9 decades below the maximum. Exact zeros, such as reciprocal-lattice points after average subtraction, and rounding noise are drawn in the bottom color rather than stretching the scale. Drag the color-bar handles to narrow the range further.</p>
   <ul>
     <li><strong>linear</strong>: preserves direct intensity contrast and is the clearest choice when you care about relative magnitude in a narrow range.</li>
     <li><strong>log10</strong>: compresses the dynamic range so weak diffuse features remain visible next to stronger intensity.</li>
