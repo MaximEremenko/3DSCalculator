@@ -1,0 +1,10 @@
+TITLE :: MnO type-II antiferromagnet (6x6x6, 864 Mn spins)
+ATOMS :: Mn O
+
+MAGNETISM :: YES
+  > MAGNETISM_FILE_STEM :: MnO_spins
+  > MAGNETIC_ATOMS :: 1
+  > FORM_FACTOR :: 1 0.4220 17.6840 0.5948 6.0050 0.0043 -0.6090 -0.0219
+  > MAGNETIC_MOMENTS :: 5.0
+
+END ::

@@ -511,6 +511,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt,.cfg,.dat" multiple hidden />
         </div>
         <div class="examples"><span>Try</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
+        <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-range="-2,2" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button></div>
         <div class="meta">
           <div class="k">File</div><div class="v" id="mFile">-</div>
           <div class="k">Atoms</div><div class="v" id="mAtoms">-</div>
@@ -637,7 +638,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <div class="when-empty">
             <h4>No diffuse volume yet</h4>
             <ol class="empty-steps"><li>Load a structure</li><li>Check the grid</li><li>Compute</li></ol>
-            <div class="examples"><span>Try an example</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB)">PMN <small>30 MB</small></button></div>
+            <div class="examples"><span>Try an example</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB)">PMN <small>30 MB</small></button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" title="Scatty spin file: MnO type-II antiferromagnet (magnetic scattering)">MnO spins</button></div>
           </div>
           <div class="when-loaded">
             <h4>Structure loaded</h4>
@@ -2547,23 +2548,30 @@ bind();draw();
      file dialog instead. */
   var exampleButtons=document.querySelectorAll("[data-example]"),fromDisk=location.protocol==="file:";
   exampleButtons.forEach(function(btn){
-    if(fromDisk)btn.title="Opens the file dialog: choose "+btn.dataset.example;
+    var urls=btn.dataset.example.split(/\s+/),names=urls.map(function(u){return u.split("/").pop();}),folder=urls[0].replace(/\/[^/]*$/,"");
+    if(fromDisk)btn.title="Opens the file dialog: choose "+names.join(" + ")+" in "+folder;
     btn.addEventListener("click",async function(){
-      var url=btn.dataset.example,name=url.split("/").pop();
       if(fromDisk){
-        status("This page was opened from disk, and browsers do not let it read "+url+" by itself: choose "+name+" in the Examples folder. Served over http (e.g. python -m http.server), the example buttons load in one click.","warn");
+        status("This page was opened from disk, and browsers do not let it read "+folder+" by itself: choose "+names.join(", ")+" there. Served over http (e.g. python -m http.server), the example buttons load in one click.","warn");
         $("file").click();
         return;
       }
       exampleButtons.forEach(function(b){b.disabled=true;});
-      status("Loading example "+name+" ...");
+      status("Loading example "+names.join(" + ")+" ...");
       try{
-        var resp=await fetch(url);
-        if(!resp.ok)throw new Error("HTTP "+resp.status);
-        var blob=await resp.blob();
-        await onFiles([new File([blob],name)]);
+        var files=await Promise.all(urls.map(async function(url,i){
+          var resp=await fetch(url);
+          if(!resp.ok)throw new Error(names[i]+": HTTP "+resp.status);
+          return new File([await resp.blob()],names[i]);
+        }));
+        await onFiles(files);
+        var range=(btn.dataset.range||"").split(",").map(Number);
+        if(range.length===2&&range.every(Number.isFinite)){
+          ["h","k","l"].forEach(function(a){$(a+"Min").value=range[0];$(a+"Max").value=range[1];});
+          updateGridSummary();
+        }
       }catch(err){
-        status("Could not load the example "+name+" ("+err.message+"). Examples need the page to be served over http(s).","err");
+        status("Could not load the example "+names.join(" + ")+" ("+err.message+"). Examples need the page to be served over http(s).","err");
       }finally{
         exampleButtons.forEach(function(b){b.disabled=false;});
       }

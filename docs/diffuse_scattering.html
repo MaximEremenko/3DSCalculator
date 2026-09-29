@@ -129,6 +129,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
     <tr><td>LAMMPS</td><td>Data file with <code>atom_style spin</code></td><td>Unit vector times <code>sp</code> (&mu;<sub>B</sub>). Form factors are those of the element's usual ion.</td></tr>
   </table>
   <p>Select the RMCProfile files together, or load the <code>.rmc6f</code> first. The spin file attaches to the loaded structure, and the <code>.dat</code> can come before or after it.</p>
+  <p>The <strong>MnO spins</strong> example buttons load <code>Examples/magnetic</code>: the MnO type-II antiferromagnet and a random (paramagnetic) configuration as Scatty files, and the antiferromagnet again in RMCProfile's format. They set the grid to &minus;2&hellip;2 in steps of 1/6.</p>
   <ul>
     <li>Spin <em>j</em> of magnetic species <em>t</em> is the <em>j</em>-th atom of atom type <em>t</em>. The type order is that of the <code>.dat</code> <code>ATOMS</code> line, or else the rmc6f "Atom types present". Version-2 files name the atom of each spin.</li>
     <li>When the <code>.rmc6f</code> has <code>Lattice vectors</code>, spins are rotated from that frame into the calculator's frame (c along z).</li>
