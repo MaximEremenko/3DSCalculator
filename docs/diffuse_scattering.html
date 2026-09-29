@@ -107,8 +107,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <h2>Advanced Calculation Controls</h2>
   <table>
     <tr><th>Control</th><th>Purpose</th></tr>
-    <tr><td>Subtract avg</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions.</td></tr>
-    <tr><td>Aavg N</td><td>Choose whether the average subtraction uses all atoms or only the atoms currently included by the element filter.</td></tr>
+    <tr><td>Subtract avg</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions. Needs per-atom unit-cell references; it is switched off for LAMMPS data and for unified files without <code>atom_unit_cell</code>.</td></tr>
     <tr><td>Normalize Nq</td><td>Normalize by the reciprocal-space grid size so runs at different resolutions are easier to compare.</td></tr>
     <tr><td>Viewer scale</td><td>Choose <code>log10</code> or <code>linear</code> display scaling for the diffuse intensity.</td></tr>
     <tr><td>Base name</td><td>Controls the base filename used by the export actions.</td></tr>

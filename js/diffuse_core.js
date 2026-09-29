@@ -187,6 +187,70 @@
     };
   }
 
+  // Lattice sum over the supercell cells along one reciprocal axis,
+  // sum_{c=c0}^{c0+n-1} exp(+2*pi*i*h*c). Only the fractional part of h
+  // matters because c is an integer, which keeps integer h exact (= n).
+  function laueAxis(values, n, c0) {
+    const out = new Float64Array(values.length * 2);
+    for (let i = 0; i < values.length; i++) {
+      const e = Number(values[i]) - Math.round(Number(values[i]));
+      const s = Math.sin(Math.PI * e);
+      const magnitude = s === 0 ? n : Math.sin(Math.PI * n * e) / s;
+      const phase = Math.PI * e * (n - 1 + 2 * c0);
+      out[i * 2] = magnitude * Math.cos(phase);
+      out[i * 2 + 1] = magnitude * Math.sin(phase);
+    }
+    return out;
+  }
+
+  // Product of the per-axis lattice sums for a run of the C-ordered h,k,l grid.
+  function laueChunk(Lh, Lk, Ll, start, count) {
+    const nk = Lk.length / 2;
+    const nl = Ll.length / 2;
+    const plane = nk * nl;
+    const out = new Float64Array(count * 2);
+    for (let q = 0; q < count; q++) {
+      const linear = start + q;
+      const ih = Math.floor(linear / plane);
+      const rem = linear - ih * plane;
+      const ik = Math.floor(rem / nl);
+      const il = rem - ik * nl;
+      const ar = Lh[ih * 2];
+      const ai = Lh[ih * 2 + 1];
+      const br = Lk[ik * 2];
+      const bi = Lk[ik * 2 + 1];
+      const cr = Ll[il * 2];
+      const ci = Ll[il * 2 + 1];
+      const abr = ar * br - ai * bi;
+      const abi = ar * bi + ai * br;
+      out[q * 2] = abr * cr - abi * ci;
+      out[q * 2 + 1] = abr * ci + abi * cr;
+    }
+    return out;
+  }
+
+  // First cell index along each axis, after checking that the per-atom
+  // indices (3 per atom) fit inside the supercell.
+  function cellOrigin(cellIndex, atoms, supercell) {
+    const lo = [Infinity, Infinity, Infinity];
+    const hi = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < atoms; i++) {
+      for (let d = 0; d < 3; d++) {
+        const c = cellIndex[i * 3 + d];
+        if (c < lo[d]) lo[d] = c;
+        if (c > hi[d]) hi[d] = c;
+      }
+    }
+    for (let d = 0; d < 3; d++) {
+      if (!(hi[d] - lo[d] < supercell[d])) {
+        throw new Error(
+          `Cell indices along axis ${d + 1} span ${hi[d] - lo[d] + 1} cells, more than the supercell (${supercell[d]})`
+        );
+      }
+    }
+    return lo;
+  }
+
   function accumulateIntensityChunk(
     out,
     start,
@@ -229,6 +293,9 @@
     complexOnes,
     targetsChunk,
     attachNeutronCoefficients,
+    laueAxis,
+    laueChunk,
+    cellOrigin,
     accumulateIntensityChunk,
   });
 })(typeof window !== "undefined" ? window : globalThis);

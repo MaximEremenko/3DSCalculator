@@ -241,18 +241,6 @@
       }
     }
     profile.includedAtomCount = includedIndices.length;
-    if (profile.includedAtomCount === parsed.atoms) {
-      profile.srcA = core.interleave3(parsed.xa, parsed.ya, parsed.za);
-      profile.onesAvg = core.complexOnes(parsed.atoms);
-    } else {
-      profile.srcA = packTripletsByIndex(
-        parsed.xa,
-        parsed.ya,
-        parsed.za,
-        includedIndices
-      );
-      profile.onesAvg = core.complexOnes(profile.includedAtomCount);
-    }
 
     if (cfg.type === "neutron" && cfg.model === "fast") {
       profile.engine = "neutron_fast";
@@ -323,20 +311,29 @@
       adelta: 0,
       finalize: 0,
     };
-    const includedAtomCount = Math.max(
-      1,
-      Number.isFinite(profile.includedAtomCount)
-        ? Math.floor(profile.includedAtomCount)
-        : parsed.atoms
-    );
-    const avgNormMode =
-      String(args.avgNormMode || "included").trim().toLowerCase() === "total"
-        ? "total"
-        : "included";
-    const avgNormN = avgNormMode === "total" ? Math.max(1, parsed.atoms) : includedAtomCount;
-    const mInv = 1 / avgNormN;
-    profile.avgNormModeUsed = avgNormMode;
-    profile.avgNormNUsed = avgNormN;
+    // Average structure amplitude: L(h) * A_delta(h) / N_cell, where L is the
+    // lattice sum over the supercell cells and A_delta uses in-cell offsets.
+    // Unlike a transform of the cell origins, this stays exact when cells
+    // hold different numbers of atoms (vacancies, element filters).
+    let laue = null;
+    let cellCount = 1;
+    if (sub) {
+      if (!parsed.cellIndex || parsed.hasSupercell === false) {
+        throw new Error(
+          "Subtract avg needs per-atom unit-cell indices (RMC6f, or unified HDF5 with atom_unit_cell). Set Subtract avg OFF for this structure."
+        );
+      }
+      const supercell = parsed.super.map((v) => Math.max(1, Math.round(Number(v) || 1)));
+      const c0 = core.cellOrigin(parsed.cellIndex, parsed.atoms, supercell);
+      laue = {
+        h: core.laueAxis(h, supercell[0], c0[0]),
+        k: core.laueAxis(k, supercell[1], c0[1]),
+        l: core.laueAxis(l, supercell[2], c0[2]),
+      };
+      cellCount = supercell[0] * supercell[1] * supercell[2];
+    }
+    const mInv = 1 / cellCount;
+    profile.averageCellCount = sub ? cellCount : null;
     let min = Infinity;
     let max = -Infinity;
 
@@ -347,6 +344,12 @@
       let q = null;
       let qa = null;
       let qd = null;
+
+      if (sub) {
+        const tAa = nowMs();
+        qa = core.laueChunk(laue.h, laue.k, laue.l, start, count);
+        timings.aavg += nowMs() - tAa;
+      }
 
       if (profile.engine === "neutron_fast") {
         if (typeof onStatus === "function") onStatus(`Computing A(hkl)${chunkTag} ...`);
@@ -368,26 +371,6 @@
         timings.a += nowMs() - tA;
 
         if (sub) {
-          if (typeof onStatus === "function") {
-            onStatus(`Computing Aavg(hkl)${chunkTag} ...`);
-          }
-          const tAa = nowMs();
-          qa = (
-            await runType3(
-              {
-                dim: 3,
-                isign: 1,
-                sourcesPacked: profile.srcA,
-                targetsPacked: trg,
-                strengths: profile.onesAvg,
-              },
-              opts,
-              backend,
-              onStageTiming
-            )
-          ).out;
-          timings.aavg += nowMs() - tAa;
-
           if (typeof onStatus === "function") {
             onStatus(`Computing Adelta(hkl)${chunkTag} ...`);
           }
@@ -412,28 +395,6 @@
         const qMag = makeQMagnitudes(trg);
         q = new Float64Array(count * 2);
         qd = sub ? new Float64Array(count * 2) : null;
-
-        if (sub) {
-          if (typeof onStatus === "function") {
-            onStatus(`Computing Aavg(hkl)${chunkTag} ...`);
-          }
-          const tAa = nowMs();
-          qa = (
-            await runType3(
-              {
-                dim: 3,
-                isign: 1,
-                sourcesPacked: profile.srcA,
-                targetsPacked: trg,
-                strengths: profile.onesAvg,
-              },
-              opts,
-              backend,
-              onStageTiming
-            )
-          ).out;
-          timings.aavg += nowMs() - tAa;
-        }
 
         for (let gi = 0; gi < profile.groups.length; gi++) {
           const g = profile.groups[gi];

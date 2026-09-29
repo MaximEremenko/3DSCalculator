@@ -60,20 +60,16 @@
 
   <h3>With subtraction (Subtract avg = ON)</h3>
   <p>The calculator subtracts the average-structure contribution:</p>
-  <span class="eq">I<sub>diffuse</sub>(<strong>Q</strong>) = |&Delta;A(<strong>Q</strong>)|&sup2; = |A<sub>tot</sub>(<strong>Q</strong>) &minus; &lt;A(<strong>Q</strong>)&gt; &psi;(<strong>Q</strong>)|&sup2;</span>
-  <p>In the ideal periodic limit the second term reproduces the Bragg scattering, so &Delta;A(<strong>Q</strong>) isolates the part of the signal associated with deviations from the average periodic structure.</p>
+  <span class="eq">I<sub>diffuse</sub>(<strong>Q</strong>) = |&Delta;A(<strong>Q</strong>)|&sup2; = |A<sub>tot</sub>(<strong>Q</strong>) &minus; L(<strong>Q</strong>) F&#772;(<strong>Q</strong>)|&sup2;</span>
+  <p>The average-structure amplitude is the lattice sum over the supercell cells times the mean cell:</p>
+  <span class="eq">L(<strong>Q</strong>) = &Sigma;<sub>cells</sub> e<sup>i<strong>Q</strong>&middot;<strong>R</strong><sub>c</sub></sup> = &prod;<sub>d</sub> e<sup>i&pi;h<sub>d</sub>(N<sub>d</sub>&minus;1)</sup> sin(&pi;N<sub>d</sub>h<sub>d</sub>) / sin(&pi;h<sub>d</sub>), &nbsp; F&#772;(<strong>Q</strong>) = (1/N<sub>cell</sub>) &Sigma;<sub>j</sub> b<sub>j</sub>(<strong>Q</strong>) e<sup>i<strong>Q</strong>&middot;<strong>&delta;</strong><sub>j</sub></sup></span>
+  <p>where N<sub>d</sub> is the supercell size along each axis, N<sub>cell</sub> = N<sub>1</sub>N<sub>2</sub>N<sub>3</sub>, and <strong>&delta;</strong><sub>j</sub> is the position of atom j relative to the origin of its unit cell. L(<strong>Q</strong>) is evaluated analytically; on a grid with steps of 1/N<sub>d</sub> it is non-zero only at integer h, k, l, so the subtraction removes exactly the Bragg peaks of the average structure. The expression stays exact when cells hold different numbers of atoms (vacancies) and when the element filter selects a subset of atoms; this is the same average used by RMCProfile's 3D diffuse module.</p>
+  <p>Subtraction needs the unit cell of every atom (the cell references of an <code>.rmc6f</code> file, or <code>atom_unit_cell</code> in a unified structure file). It is switched off for LAMMPS data and for unified files without cell references.</p>
 </section>
 
 <section>
   <h2>Normalization Controls</h2>
-  <p>The calculator exposes two normalization-related controls with different roles. <code>Aavg N</code> changes the denominator used inside the coherent-subtraction term, while <code>Normalize Nq</code> divides the final displayed intensity by the grid-point count.</p>
-  <h3>Aavg N (average normalization denominator)</h3>
-  <p><code>Aavg N</code> controls which atom count is used in the average-subtraction term:</p>
-  <table>
-    <tr><th>Setting</th><th>Meaning</th></tr>
-    <tr><td>N included (default)</td><td>Only atoms whose elements are currently selected in the element filter. Correct when computing partial diffuse scattering from a subset of elements.</td></tr>
-    <tr><td>N total</td><td>All atoms in the configuration regardless of element filter.</td></tr>
-  </table>
+  <p><code>Normalize Nq</code> divides the final displayed intensity by the grid-point count.</p>
 
   <h3>Normalize Nq (per-Q-point normalization)</h3>
   <p>When ON (default), the final intensity array is divided by the total number of reciprocal-space grid points:</p>
