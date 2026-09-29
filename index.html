@@ -803,7 +803,10 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
       <details class="section" id="render3dBox" open>
         <summary><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg><span>3D view</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
         <div class="section-body">
-          <label title="Isosurfaces, or the faces of the volume with one octant cut away to show three planes through the origin">Volume<select id="volumeMode"><option value="iso" selected>Isosurfaces</option><option value="cube">Cut-away cube</option></select></label>
+          <div class="grid2 align-end">
+            <label title="Isosurfaces, or the faces of the volume with one octant cut away to show three planes through the origin">Volume<select id="volumeMode"><option value="iso" selected>Isosurfaces</option><option value="cube">Cut-away cube</option></select></label>
+            <label id="cubeCutLabel" class="hidden" title="Size of the cut-away corner: none at the left, the planes through the origin in the middle, the far corner at the right">Cut size<input id="cubeCut" type="range" min="0" max="100" step="1" value="50"></label>
+          </div>
           <div class="grid3">
             <label title="Isosurface level as a percentile of the volume">Iso %<input id="isoPct" type="number" value="95" min="50" max="99.99" step="5"></label>
             <label>Surfaces<input id="isoCount" type="number" value="4" min="1" max="12" step="1"></label>
@@ -1229,7 +1232,6 @@ return out;
 function makeHklAxesOverlayTraces(res){
 if(!res||!Array.isArray(res.Bq))return[];
 const hMin=res.h[0],hMax=res.h[res.h.length-1],kMin=res.k[0],kMax=res.k[res.k.length-1],lMin=res.l[0],lMax=res.l[res.l.length-1];
-const h0=hMin,k0=kMin,l0=lMin;
 const eps=1e-9;
 const axisH=[],axisK=[],axisL=[],gridH=[],gridK=[],gridL=[],edgeH=[],edgeK=[],edgeL=[];
 const tickBarH=[],tickBarK=[],tickBarL=[],tickTxtH=[],tickTxtK=[],tickTxtL=[],nameTxtH=[],nameTxtK=[],nameTxtL=[];
@@ -1320,9 +1322,11 @@ const out=[];
 for(const t of ticks){if(!out.length||Math.abs(t-out[out.length-1])>eps)out.push(t);} 
 return out;
 }
-addSegHKL(axisH,axisK,axisL,[hMin,k0,l0],[hMax,k0,l0]);
-addSegHKL(axisH,axisK,axisL,[h0,kMin,l0],[h0,kMax,l0]);
-addSegHKL(axisH,axisK,axisL,[h0,k0,lMin],[h0,k0,lMax]);
+/* The axes run along the box edges that face the default camera (it looks from +h, +k, +l), so the opaque cut-away
+cube does not hide them: H along k = kMax, K along h = hMax (the positive-H side), L up the edge at h = hMax, k = kMin. */
+addSegHKL(axisH,axisK,axisL,[hMin,kMax,lMin],[hMax,kMax,lMin]);
+addSegHKL(axisH,axisK,axisL,[hMax,kMin,lMin],[hMax,kMax,lMin]);
+addSegHKL(axisH,axisK,axisL,[hMax,kMin,lMin],[hMax,kMin,lMax]);
 const hs=[hMin,hMax],ks=[kMin,kMax],ls=[lMin,lMax],hStep=chooseHklTickStep(res.h,9),kStep=chooseHklTickStep(res.k,9),lStep=chooseHklTickStep(res.l,9),hTicks=hklAxisTicks(hMin,hMax,hStep),kTicks=hklAxisTicks(kMin,kMax,kStep),lTicks=hklAxisTicks(lMin,lMax,lStep);
 for(const h of hs){for(const k of kTicks)addSegHKL(gridH,gridK,gridL,[h,k,lMin],[h,k,lMax]);for(const l of lTicks)addSegHKL(gridH,gridK,gridL,[h,kMin,l],[h,kMax,l]);}
 for(const k of ks){for(const h of hTicks)addSegHKL(gridH,gridK,gridL,[h,k,lMin],[h,k,lMax]);for(const l of lTicks)addSegHKL(gridH,gridK,gridL,[hMin,k,l],[hMax,k,l]);}
@@ -1334,11 +1338,10 @@ const diag=Math.max(1e-9,vNorm(vSub(qb.max,qb.min)));
 const tickLen=0.024*diag,tickGap=2.0*tickLen,tickCharH=0.022*diag,labelCharH=0.031*diag,labelOffset=0.120*diag;
 const qCenter=[0.5*(qb.min[0]+qb.max[0]),0.5*(qb.min[1]+qb.max[1]),0.5*(qb.min[2]+qb.max[2])];
 const axes=[
-{idx:0,label:"H (r.l.u.)",start:[hMin,k0,l0],end:[hMax,k0,l0],range:[hMin,hMax],arr:res.h,partner:qKdir,mirror:false},
-{idx:1,label:"K (r.l.u.)",start:[h0,kMin,l0],end:[h0,kMax,l0],range:[kMin,kMax],arr:res.k,partner:qHdir,mirror:true},
-{idx:2,label:"L (r.l.u.)",start:[h0,k0,lMin],end:[h0,k0,lMax],range:[lMin,lMax],arr:res.l,partner:qKdir,mirror:true}
+{idx:0,label:"H (r.l.u.)",start:[hMin,kMax,lMin],end:[hMax,kMax,lMin],range:[hMin,hMax],arr:res.h,partner:qKdir},
+{idx:1,label:"K (r.l.u.)",start:[hMax,kMin,lMin],end:[hMax,kMax,lMin],range:[kMin,kMax],arr:res.k,partner:qHdir},
+{idx:2,label:"L (r.l.u.)",start:[hMax,kMin,lMin],end:[hMax,kMin,lMax],range:[lMin,lMax],arr:res.l,partner:qKdir}
 ];
-let originShown=false;
 for(const a of axes){
 const qS=toQ(a.start[0],a.start[1],a.start[2]),qE=toQ(a.end[0],a.end[1],a.end[2]),qAlong=vHat(vSub(qE,qS));
 let raw=vOrth(a.partner,qAlong);
@@ -1348,23 +1351,23 @@ let tp=vScale(vHat(raw),-1);
 const mid=[a.start[0],a.start[1],a.start[2]];mid[a.idx]=0.5*(a.range[0]+a.range[1]);
 const qMid=toQ(mid[0],mid[1],mid[2]);
 if(vDot(vSub(qCenter,qMid),tp)>0)tp=vScale(tp,-1);
-const textUp=vScale(tp,a.mirror?1:-1);
+/* Text reads left to right on the default screen (bottom to top on a vertical axis) and faces the camera: the eye is along (1,1,1), screen right along (-1,1,0) */
+const camDir=[1,1,1],sr=vDot(qAlong,[-1,1,0]),textRight=sr<-1e-6?vScale(qAlong,-1):qAlong,textUp=vDot(vCross(textRight,tp),camDir)>0?tp:vScale(tp,-1);
 const ticks=buildTicks(a.range[0],a.range[1],a.arr,6);
 for(let ti=0;ti<ticks.length;ti++){
 const t=ticks[ti];
 const p=[a.start[0],a.start[1],a.start[2]];p[a.idx]=t;
 const qT=toQ(p[0],p[1],p[2]);
 addSeg(tickBarH,tickBarK,tickBarL,qT,vAdd(qT,vScale(tp,tickLen)));
-if(Math.abs(t-a.range[0])<=eps){if(originShown)continue;originShown=true;}
 const tStr=t.toFixed(1);
 let tOrigin=vAdd(qT,vScale(tp,tickGap));
 if(ti===0)tOrigin=vAdd(tOrigin,vScale(qAlong,1.1*tickCharH));
 else if(ti===ticks.length-1)tOrigin=vAdd(tOrigin,vScale(qAlong,-1.1*tickCharH));
 const tAnchor="center";
-addPolyline(tickTxtH,tickTxtK,tickTxtL,strokeText3D(tStr,tOrigin,qAlong,textUp,tickCharH,tAnchor));
+addPolyline(tickTxtH,tickTxtK,tickTxtL,strokeText3D(tStr,tOrigin,textRight,textUp,tickCharH,tAnchor));
 }
 const lOrigin=vAdd(qMid,vScale(tp,labelOffset));
-addPolyline(nameTxtH,nameTxtK,nameTxtL,strokeText3D(a.label,lOrigin,qAlong,textUp,labelCharH,"center"));
+addPolyline(nameTxtH,nameTxtK,nameTxtL,strokeText3D(a.label,lOrigin,textRight,textUp,labelCharH,"center"));
 }
 const traces=[],pth=plotTheme();
 // Hide dense box-face grid; keep only box edges and axes.
@@ -1567,6 +1570,8 @@ function makeCubeTraces(res,mode){const shape=res.shape;if(shape.some(n=>n<2))re
 const axes=[res.h,res.k,res.l],cut=axes.map(ax=>{if(ax[0]<=0&&ax[ax.length-1]>=0){let b=0;for(let i=1;i<ax.length;i++)if(Math.abs(ax[i])<Math.abs(ax[b]))b=i;return b;}return Math.floor(ax.length/2);});
 const pick=(n,c)=>{const st=Math.max(1,Math.ceil(n/160)),out=new Set([0,n-1,c]);for(let i=0;i<n;i+=st)out.add(i);return Array.from(out).sort((a,b)=>a-b);};
 const sel=shape.map((n,d)=>pick(n,cut[d])),lv=getActiveColorLevelWindow(),gb=getGlobalDisplayBounds(mode),cmin=lv?lv.cmin:gb.min,cmax=lv?lv.cmax:gb.max,traces=[];let points=0;
+/* Cut size (0..100): 0 cuts nothing, 50 cuts at the planes through the origin, 100 at the far corner */
+const lam=Math.max(0,Math.min(2,Number($("cubeCut")?$("cubeCut").value:50)/50));for(let d=0;d<3;d++){const top=shape[d]-1,c0=cut[d];cut[d]=Math.round(lam<=1?top-lam*(top-c0):c0*(2-lam));}
 /* the face where axis d is at index f; keep(a,b) over the other two axes, in h, k, l order */
 const face=(d,f,keep,name)=>{const [pa,qa]=[0,1,2].filter(x=>x!==d),H=[],K=[],L=[],C=[];for(const a of sel[pa]){const hr=[],kr=[],lr=[],cr=[];for(const b of sel[qa]){const ijk=[0,0,0];ijk[d]=f;ijk[pa]=a;ijk[qa]=b;const ok=keep(a,b);hr.push(ok?res.h[ijk[0]]:NaN);kr.push(ok?res.k[ijk[1]]:NaN);lr.push(ok?res.l[ijk[2]]:NaN);cr.push(ok?scaledVal(res.I[idx(shape,ijk[0],ijk[1],ijk[2])],mode):NaN);if(ok)points++;}H.push(hr);K.push(kr);L.push(lr);C.push(cr);}
 const q=transformSurfaceHklToQ(H,K,L,res.Bq);traces.push({type:"surface",x:q.x,y:q.y,z:q.z,surfacecolor:planeColor(res,C),cmin,cmax,cauto:false,colorscale:getColorPreset().plotly,showscale:!traces.length,colorbar:{thickness:14,len:0.8,outlinewidth:0,tickfont:{color:plotTheme().font}},opacity:1,lighting:{ambient:1,diffuse:0,specular:0,roughness:1,fresnel:0},hovertext:makeSurfaceHoverText(H,K,L,q.x,q.y,q.z,C),hoverinfo:"text",name});};
@@ -1575,7 +1580,7 @@ face(0,0,()=>true,"h min");face(1,0,()=>true,"k min");face(2,0,()=>true,"l min")
 face(0,last[0],(j,m)=>!(j>cj&&m>cm),"h max");face(1,last[1],(i,m)=>!(i>ci&&m>cm),"k max");face(2,last[2],(i,j)=>!(i>ci&&j>cj),"l max");
 face(0,ci,(j,m)=>j>=cj&&m>=cm,"h cut");face(1,cj,(i,m)=>i>=ci&&m>=cm,"k cut");face(2,cm,(i,j)=>i>=ci&&j>=cj,"l cut");
 return{traces,points,cut:cut.map((c,d)=>axes[d][c])};}
-function updateVolumeUi(){const cube=$("volumeMode")&&$("volumeMode").value==="cube";if($("isoTitle"))$("isoTitle").textContent=cube?"3D cube":"3D isosurface";$("isoPct").disabled=$("isoCount").disabled=cube;}
+function updateVolumeUi(){const cube=$("volumeMode")&&$("volumeMode").value==="cube";if($("cubeCutLabel"))$("cubeCutLabel").classList.toggle("hidden",!cube);if($("isoTitle"))$("isoTitle").textContent=cube?"3D cube":"3D isosurface";$("isoPct").disabled=$("isoCount").disabled=cube;}
 /* A new plane that the plane view's camera would see edge-on turns the camera toward the plane's normal: once per plane,
 so the user's own rotation stays. The scene is isotropic in Q, so the camera eye is a direction in Q. */
 function planeCameraFix(res){if(getSliceMode()!=="plane"||!state.plane||!window.Plotly)return;const n=state.plane.normalUnit||norm3(state.plane.normal),key=n.map(v=>v.toFixed(4)).join(",");if(state.planeCamKey===key)return;state.planeCamKey=key;
@@ -2507,6 +2512,7 @@ $("closeSliceWin").addEventListener("click",closeSliceWindow);
 $("show2d").addEventListener("change",()=>{update2dVisibility();if($("show2d").value==="1"){draw();}});
 for(const id of ["isoPct","isoCount","voxelCap","showIso3d","showPlane3d","auto3d"]){$(id).addEventListener("change",()=>schedule3dRender(false));}
 $("volumeMode").addEventListener("change",()=>{updateVolumeUi();schedule3dRender(true,0);});
+$("cubeCut").addEventListener("input",()=>schedule3dRender(true,80));
 window.addEventListener("beforeunload",closeSliceWindow);
 /* Redraw canvas on resize so HiDPI backing store stays correct */
 let _resizeTimer=0;
