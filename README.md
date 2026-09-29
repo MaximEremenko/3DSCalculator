@@ -26,12 +26,15 @@ The `docs/` directory contains the full documentation set
 - **Input formats**: RMCProfile `.rmc6f`, LAMMPS data files
   (`.data` / `.lmp` / `.lammps`), and unified structure HDF5
   (`.h5` / `.hdf5`), loaded via drag-and-drop or file picker.
-- **Compute backends**: type-3 NUFFT on a user-defined `h,k,l` grid with
-  three selectable engines — WebGPU (`Type-3 + webgpufft`), CPU FFT
-  (`type3NufftCpu`), and a CPU f64 NUFFT (`type3NufftCpuDirect`) — plus an
-  exact CPU f64 direct sum for small validation grids.
-  If WebGPU is unavailable the app falls back to the CPU FFT backend
-  automatically; large grids on the WebGPU path run as chunked NUFFT passes.
+- **Compute backends**: the default, `wgpuNUFFT type-1 (WebGPU)`, evaluates
+  the uniform `h,k,l` grid as a type-1 NUFFT on the GPU (bundled
+  [wgpu-web](https://github.com/MaximEremenko/wgpuNUFFT)), with all phases
+  prepared in fp64 and every run spot-checked against exact sums. The other
+  engines are the type-3 WebGPU path (`Type-3 + webgpufft`), CPU FFT
+  (`type3NufftCpu`), a CPU f64 NUFFT (`type3NufftCpuDirect`), and an exact
+  CPU f64 direct sum for small validation grids. If WebGPU is unavailable
+  the app falls back to the CPU FFT backend automatically; large grids on
+  the WebGPU paths run in chunks.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray
   (Waasmaier table), and electron scattering (neutral-atom tables:
   Lobato, Peng, Doyle, Weickenmeier, Kirkland; ionic Peng model with
@@ -50,8 +53,9 @@ The `docs/` directory contains the full documentation set
   SVG snapshots, and standalone interactive Plotly HTML files of the
   3D views.
 
-**Precision note**: the WebGPU FFT/NUFFT stack and the CPU FFT path use
-`fp32` arithmetic. `type3NufftCpuDirect` runs the NUFFT in `fp64`, with an
+**Precision note**: the WebGPU paths and the CPU FFT path use `fp32`
+arithmetic. On the shipped examples the type-1 backend stays within about
+1e-6 of the peak intensity of exact sums. `type3NufftCpuDirect` runs the NUFFT in `fp64`, with an
 accuracy set by the tolerance (1e-9 by default); it is not an exact sum.
 For critical scientific checks, compare against the `Exact sum` backend on
 a small grid.
@@ -72,8 +76,9 @@ then browse to `http://localhost:8000/index.html`.
 Notes:
 
 - **Internet is required on first load** for the CDN scripts: the
-  WebGPU-NUFFT compute kernels (jsDelivr) and Plotly (cdn.plot.ly, loaded
-  on demand). HDF5 support (`h5wasm`) is bundled locally in `js/`.
+  WebGPU-NUFFT type-3 kernels and WebGPU smoothing (jsDelivr) and Plotly
+  (cdn.plot.ly, loaded on demand). HDF5 support (`h5wasm`) and the type-1
+  engine (`wgpu-web`) are bundled locally in `js/`.
   The NUFFT and FFT libraries are pinned (WebGPU-NUFFT `v0.1.0`,
   WebGPU-FFT commit `fa45c93`), so results do not change when those
   repositories move on.
@@ -110,8 +115,12 @@ from the [MaximEremenko/Utilities](https://github.com/MaximEremenko/Utilities)
 monorepo, where the tool lived under `RMCProfileUtilities/Diffuse_Scattering/`.
 The shared modules `js/unified_hdf5.js` and `js/h5wasm.js` are vendored from
 that monorepo's `Format_Converter` component; `h5wasm` is NIST-developed
-software (see `js/h5wasm-LICENSE.txt`). Companion tools from the Utilities
-collection remain in the monorepo and are linked from the documentation.
+software (see `js/h5wasm-LICENSE.txt`). `js/wgpu_web.js` is the standalone
+build of wgpu-web 0.2.0 from
+[MaximEremenko/wgpuNUFFT](https://github.com/MaximEremenko/wgpuNUFFT)
+(commit `011f4de`, built with `wgpu-web/build_standalone.py`). Companion
+tools from the Utilities collection remain in the monorepo and are linked
+from the documentation.
 
 ## Scope
 
@@ -123,4 +132,5 @@ only.
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE). The vendored `h5wasm` bundle
-carries its own NIST license notice in `js/h5wasm-LICENSE.txt`.
+carries its own NIST license notice in `js/h5wasm-LICENSE.txt`; the vendored
+`wgpu-web` bundle is Apache-2.0 (`js/wgpu_web-LICENSE.txt`).

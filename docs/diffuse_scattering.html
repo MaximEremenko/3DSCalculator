@@ -132,13 +132,14 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
     <section>
       <h2>Backends And Scattering Choices</h2>
       <ul>
-        <li><strong>WebGPU</strong>: fastest interactive path when supported by the browser/GPU.</li>
+        <li><strong>wgpuNUFFT type-1 (WebGPU)</strong>: the default and fastest path. The uniform grid is evaluated as a type-1 NUFFT on the GPU with phases prepared in <code>fp64</code>, and each run is spot-checked against exact sums (the value is shown in the status line).</li>
+        <li><strong>Type-3 + webgpufft (WebGPU)</strong>: the earlier WebGPU path, kept as a fallback.</li>
         <li><strong>CPU FFT</strong>: the preferred fallback when WebGPU is unavailable.</li>
         <li><strong>type3NufftCpuDirect</strong>: the NUFFT evaluated in <code>fp64</code> on the CPU; accuracy follows the tolerance (1e-9 by default).</li>
         <li><strong>Exact sum</strong>: the exact <code>fp64</code> sum over atoms and grid points; slow, limited to about 2&times;10<sup>8</sup> atom&ndash;point pairs per transform, and meant as the reference for small grids.</li>
       </ul>
       <p>The UI also supports neutron, X-ray, and electron scattering options with model/table selection.</p>
-      <p>Practical default grid-limit presets are backend-dependent: the WebGPU preset uses <code>8,000,000</code> voxels, while the CPU FFT and <code>type3NufftCpuDirect</code> presets use <code>120,000</code> voxels and the exact sum uses <code>20,000</code>. These are practical defaults, not hard physical limits, but they are the right starting point for sizing runs.</p>
+      <p>Practical default grid-limit presets are backend-dependent: the WebGPU presets use <code>8,000,000</code> voxels per chunk, while the CPU FFT and <code>type3NufftCpuDirect</code> presets use <code>120,000</code> voxels and the exact sum uses <code>20,000</code>. These are practical defaults, not hard physical limits, but they are the right starting point for sizing runs.</p>
     </section>
     
 <section>
