@@ -85,9 +85,10 @@ a small grid.
 Open `index.html` in a modern browser. All local modules
 load through plain script tags (no local `fetch` or workers), so opening the
 file directly from disk (`file://`) works in practice. From disk, the browser
-does not let the page read `Examples/` by itself, so the example buttons open
-the file dialog instead; pick the file from the `Examples` folder. A local web
-server is the most reliable route and loads examples in one click:
+does not let the page read `Examples/` itself, so the example buttons load the
+compressed copies in `Examples/embedded` (written by
+`tools/make_embedded_examples.py`). The exception is PMN (30 MB), which opens
+the file dialog. A local web server is the most reliable route:
 
 ```
 python -m http.server
@@ -107,7 +108,7 @@ Notes:
 - The WebGPU backend requires a WebGPU-capable browser (e.g. current
   Chrome or Edge). Other browsers automatically use the CPU FFT backend.
 
-Press one of the example buttons (or load your own structure), check the
+Open **Examples** in the Structure card and pick one (or load your own structure), check the
 `h,k,l` grid, and press **Compute diffuse** (`Ctrl+Enter`).
 
 ## Examples

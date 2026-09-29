@@ -260,6 +260,8 @@ input[type=range]:disabled{opacity:.45;cursor:not-allowed}
 .drop-text .link{color:var(--accent);font-weight:600}
 .drop-formats{font-size:11px;color:var(--text-3)}
 .examples{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3)}
+.examples-box>summary .fine{font-weight:400;margin-left:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.examples-box .examples>span:first-child{min-width:68px}
 .chip-btn{height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--text-2);font-size:11.5px;font-weight:500;cursor:pointer;transition:all .15s}
 .chip-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .chip-btn:disabled{opacity:.5;cursor:progress}
@@ -529,8 +531,13 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <span class="drop-text"><span><strong>Drop files here</strong> or <span class="link">browse</span></span><span class="drop-formats">.rmc6f &middot; unified .h5 &middot; LAMMPS &middot; Scatty &middot; RMCProfile spins (.cfg + .dat) &middot; h k l I data</span></span>
           <input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt,.cfg,.dat" multiple hidden />
         </div>
-        <div class="examples"><span>Try</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
-        <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button></div>
+        <details class="subsection examples-box" id="examplesBox">
+          <summary>Examples <span class="fine">LiFeO&#8322;, CaTiO&#8323;, PMN, MnO spins</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
+          <div class="subsection-body">
+          <div class="examples"><span>Structures</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
+          <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button></div>
+          </div>
+        </details>
         <div class="meta">
           <div class="k">File</div><div class="v" id="mFile">-</div>
           <div class="k">Atoms</div><div class="v" id="mAtoms">-</div>
@@ -678,7 +685,8 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <div class="when-empty">
             <h4>No diffuse volume yet</h4>
             <ol class="empty-steps"><li>Load a structure</li><li>Check the grid</li><li>Compute</li></ol>
-            <div class="examples"><span>Try an example</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB)">PMN <small>30 MB</small></button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet (magnetic scattering)">MnO spins</button></div>
+            <button class="chip-btn reveal-examples" type="button" id="revealExamples" aria-expanded="false">Show examples</button>
+            <div class="examples hidden" id="emptyExamples"><span>Examples</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB)">PMN <small>30 MB</small></button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet (magnetic scattering)">MnO spins</button></div>
           </div>
           <div class="when-loaded">
             <h4>Structure loaded</h4>
@@ -2643,11 +2651,30 @@ bind();draw();
      (file://) may not read them itself, so there the button opens the
      file dialog instead. */
   var exampleButtons=document.querySelectorAll("[data-example]"),fromDisk=location.protocol==="file:";
+  // Examples/embedded/*.js hold gzip+base64 copies (tools/make_embedded_examples.py),
+  // which a page opened from disk can load as scripts; PMN (30 MB) has none.
+  var EMBEDDED_EXAMPLES=["Examples/LiFeO2.rmc6f","Examples/CaTiO3.rmc6f","Examples/magnetic/MnO_order_spins.txt","Examples/magnetic/MnO_random_spins.txt","Examples/magnetic/MnO.rmc6f","Examples/magnetic/MnO_spins.cfg","Examples/magnetic/MnO.dat"];
+  function embeddedExample(url){
+    return new Promise(function(resolve,reject){
+      var store=window.__3dsExamples||{};
+      if(store[url])return resolve(store[url]);
+      var el=document.createElement("script");
+      el.src="Examples/embedded/"+url.slice("Examples/".length).replace(/\//g,"_")+".js";
+      el.onload=function(){var v=(window.__3dsExamples||{})[url];if(v)resolve(v);else reject(new Error("no embedded copy of "+url));};
+      el.onerror=function(){reject(new Error("could not load "+el.src));};
+      document.head.appendChild(el);
+    }).then(function(b64){
+      var bin=atob(b64),bytes=new Uint8Array(bin.length);
+      for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+      return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).blob();
+    });
+  }
   exampleButtons.forEach(function(btn){
     var urls=btn.dataset.example.split(/\s+/),names=urls.map(function(u){return u.split("/").pop();}),folder=urls[0].replace(/\/[^/]*$/,"");
-    if(fromDisk)btn.title="Opens the file dialog: choose "+names.join(" + ")+" in "+folder;
+    var embedded=urls.every(function(u){return EMBEDDED_EXAMPLES.indexOf(u)>=0;});
+    if(fromDisk&&!embedded)btn.title="Opens the file dialog: choose "+names.join(" + ")+" in "+folder;
     btn.addEventListener("click",async function(){
-      if(fromDisk){
+      if(fromDisk&&!embedded){
         status("This page was opened from disk, and browsers do not let it read "+folder+" by itself: choose "+names.join(", ")+" there. Served over http (e.g. python -m http.server), the example buttons load in one click.","warn");
         $("file").click();
         return;
@@ -2656,6 +2683,7 @@ bind();draw();
       status("Loading example "+names.join(" + ")+" ...");
       try{
         var files=await Promise.all(urls.map(async function(url,i){
+          if(fromDisk)return new File([await embeddedExample(url)],names[i]);
           var resp=await fetch(url);
           if(!resp.ok)throw new Error(names[i]+": HTTP "+resp.status);
           return new File([await resp.blob()],names[i]);
@@ -2669,12 +2697,15 @@ bind();draw();
         var plane=(btn.dataset.plane||"").split(/\s+/).map(function(t){return t.split(",").map(Number);});
         state.pendingPlane=plane.length===2&&plane.every(function(v){return v.length===3&&v.every(Number.isFinite);})?{normal:plane[0],origin:plane[1]}:null;
       }catch(err){
-        status("Could not load the example "+names.join(" + ")+" ("+err.message+"). Examples need the page to be served over http(s).","err");
+        status("Could not load the example "+names.join(" + ")+" ("+err.message+").","err");
       }finally{
         exampleButtons.forEach(function(b){b.disabled=false;});
       }
     });
   });
+
+  var reveal=$("revealExamples");
+  if(reveal)reveal.addEventListener("click",function(){var row=$("emptyExamples"),show=row.classList.contains("hidden");row.classList.toggle("hidden",!show);reveal.textContent=show?"Hide examples":"Show examples";reveal.setAttribute("aria-expanded",String(show));});
 
   /* Busy state while a compute runs (#run is disabled only then) */
   var run=$("run");

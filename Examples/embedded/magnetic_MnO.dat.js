@@ -1,0 +1,1 @@
+(window.__3dsExamples = window.__3dsExamples || {})["Examples/magnetic/MnO.dat"] = "H4sIAAAAAAACClWNMQ+CMBCF9/6KGzWR5sBSgcGEYDFNKE2gixNhQMMgEmDQf29BQzQ33L0v794z0mQCoghUp2F69Y0jJdTd1F6bYXjc61vXTLDhTzs7CDizPhj7thu3JDZalZ9X0ISo+JwLI0s1o4soCcARVlilMhNVaYT6llVLyq8pqdZEd+GpLuxfnBhdLBCQMs9DcA+UBwyt9EMWAKeI/qwQ2R4cpBxDnDd6bvhfoLQSuVkqfIqEiPxkb/IGloxeOQUBAAA=";
