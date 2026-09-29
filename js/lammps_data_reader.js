@@ -217,7 +217,9 @@
     atoms.forEach(function (a, i) {
       if (!a.moment || !(a.moment[0] || a.moment[1] || a.moment[2])) return;
       if (!index.has(a.element)) {
-        const ion = table ? ((/\d/.test(a.element) && table.find(a.element)) || table.defaultIon(a.element)) : null;
+        // LAMMPS SPIN mostly models metals: the neutral-atom form factor by
+        // default (choose an ion in the species table for ionic compounds)
+        const ion = table ? ((/\d/.test(a.element) && table.find(a.element)) || table.find(a.element + "0") || table.defaultIon(a.element)) : null;
         index.set(a.element, species.length);
         species.push({ label: a.element, element: a.element, ion: ion ? ion.ion : null, scale: 1, formFactorSource: ion ? "table" : "none",
           formFactor: ion ? { j0: ion.j0, j2: ion.j2, c2: 0 } : { j0: [0, 0, 0, 0, 0, 0, 0, 0, 1], j2: null, c2: 0 } });
@@ -225,7 +227,7 @@
       speciesOfAtom[i] = index.get(a.element);
       vectors.set(a.moment, i * 3);
     });
-    return { species: species, speciesOfAtom: speciesOfAtom, vectors: vectors, source: "LAMMPS atom_style spin (sp x unit vector, muB)", notes: [] };
+    return { species: species, speciesOfAtom: speciesOfAtom, vectors: vectors, source: "LAMMPS atom_style spin (sp x unit vector, muB)", notes: species.some(function (sp) { return /0$/.test(sp.ion || ""); }) ? ["neutral-atom form factors (metals); choose an ion in the species table for ionic compounds"] : [] };
   }
 
   function parse(name, text) {

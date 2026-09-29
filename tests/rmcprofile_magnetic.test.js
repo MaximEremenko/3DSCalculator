@@ -178,7 +178,7 @@ test("LAMMPS atom_style spin gives the same MnO intensities", async () => {
     `0 ${L} xlo xhi`, `0 ${L} ylo yhi`, `0 ${L} zlo zhi`, "", "Masses", "", "1 54.938 # Mn", "", "Atoms # spin", "", ...rows, "",
   ].join("\n");
   const parsed = core.attachNeutronCoefficients(ctx.LammpsDataReader.parse("mno.data", data), 10);
-  assert.equal(parsed.magnetic.species[0].ion, "Mn2");
+  assert.equal(parsed.magnetic.species[0].ion, "Mn0"); // neutral atom for LAMMPS (metals)
   parsed.magnetic.species[0].formFactor = SCATTY.magnetic.species[0].formFactor;
   // LAMMPS hkl refer to the whole box: h_box = 6 h
   const boxAxis = AXIS.map((v) => Number((v * BOX).toFixed(12)));
