@@ -408,6 +408,15 @@
     // Subtract the ideal paramagnet (2/3) sum_j p^2 |mu_j|^2 f_j(Q)^2, the
     // uncorrelated-spin intensity (Scatty's TEMP_SUBTRACT).
     const paramagnet = !!(args.magnetic && args.magnetic.subtractParamagnet);
+    // Lattice centring of the average structure, as a letter for both parts
+    // or { nuclear, magnetic }: no Bragg term is subtracted at reflections
+    // the centring forbids. The magnetic mean cell can break the nuclear
+    // centring (e.g. type-I order on an fcc lattice), so it has its own.
+    const centringArg = args.centring || "P";
+    const centring = {
+      nuclear: String((typeof centringArg === "object" ? centringArg.nuclear : centringArg) || "P").toUpperCase(),
+      magnetic: String((typeof centringArg === "object" ? centringArg.magnetic : centringArg) || "P").toUpperCase(),
+    };
     if (typeof runType3 !== "function") {
       throw new Error("computeIntensity requires runType3 callback");
     }
@@ -556,9 +565,14 @@
       let qa = null;
       let mm = null;
 
+      let qaNuclear = null;
+      let qaMagnetic = null;
       if (sub) {
         const tAa = nowMs();
         qa = core.laueChunk(laue.h, laue.k, laue.l, start, count);
+        const centred = (letter) => (letter === "P" ? qa : core.multiplyComplex(qa, core.centringChunk(h, k, l, start, count, letter)));
+        qaNuclear = centred(centring.nuclear);
+        qaMagnetic = centring.magnetic === centring.nuclear ? qaNuclear : centred(centring.magnetic);
         timings.aavg += nowMs() - tAa;
       }
 
@@ -605,7 +619,7 @@
 
         status(`Finalizing intensity${chunkTag} ...`);
         const tFin = nowMs();
-        mm = core.accumulateIntensityChunk(I, start, count, q, qa, qd, mInv, sub);
+        mm = core.accumulateIntensityChunk(I, start, count, q, qaNuclear, qd, mInv, sub);
         timings.finalize += nowMs() - tFin;
       }
 
@@ -631,7 +645,7 @@
                 accumulateScaledComplex(avg, await transform(g.srcD, g.strengths[a]), ffs[gi]);
               }
             }
-            subtractAverage(dm, qa, avg, mInv);
+            subtractAverage(dm, qaMagnetic, avg, mInv);
           }
           core.accumulateMagneticComponent(acc, dm, a, h, k, l, Bq, start, count);
         }
