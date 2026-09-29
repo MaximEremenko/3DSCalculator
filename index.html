@@ -1528,7 +1528,13 @@ function convAxis0Same(src,dst,shape,kernel){const nh=shape[0],nk=shape[1],nl=sh
 function convAxis1Same(src,dst,shape,kernel){const nh=shape[0],nk=shape[1],nl=shape[2],c=Math.floor(kernel.length/2);for(let ih=0;ih<nh;ih++){const baseH=ih*nk*nl;for(let ik=0;ik<nk;ik++)for(let il=0;il<nl;il++){let acc=0;for(let j=0;j<kernel.length;j++){const sk=ik+j-c;if(sk<0||sk>=nk)continue;acc+=src[baseH+sk*nl+il]*kernel[j];}dst[baseH+ik*nl+il]=acc;}}}
 function convAxis2Same(src,dst,shape,kernel){const nh=shape[0],nk=shape[1],nl=shape[2],c=Math.floor(kernel.length/2);for(let ih=0;ih<nh;ih++)for(let ik=0;ik<nk;ik++){const row=(ih*nk+ik)*nl;for(let il=0;il<nl;il++){let acc=0;for(let j=0;j<kernel.length;j++){const sl=il+j-c;if(sl<0||sl>=nl)continue;acc+=src[row+sl]*kernel[j];}dst[row+il]=acc;}}}
 function minMaxArray(a){let mn=Infinity,mx=-Infinity;for(let i=0;i<a.length;i++){const v=a[i];if(v<mn)mn=v;if(v>mx)mx=v;}return{min:mn,max:mx};}
-function smoothIntensity3d(I,shape,superCell,cfg){const nh=shape[0],nk=shape[1],nl=shape[2],grid=nh*nk*nl,scale=Math.max(1,Math.floor(cfg.scale||1)),sx=Math.max(1,Math.floor((superCell&&superCell[0]||1)*scale)),sy=Math.max(1,Math.floor((superCell&&superCell[1]||1)*scale)),sz=Math.max(1,Math.floor((superCell&&superCell[2]||1)*scale)),kind=(cfg.type||"lanczos").toLowerCase(),chebDb=Number.isFinite(cfg.chebDb)?cfg.chebDb:100,w0=kind==="chebyshev"?chebwinWindow(sx,chebDb):lanczosWindow(sx),w1=kind==="chebyshev"?chebwinWindow(sy,chebDb):lanczosWindow(sy),w2=kind==="chebyshev"?chebwinWindow(sz,chebDb):lanczosWindow(sz),k0=fftMagShiftNorm(w0,sx),k1=fftMagShiftNorm(w1,sy),k2=fftMagShiftNorm(w2,sz),tmpA=new Float64Array(grid),tmpB=new Float64Array(grid);convAxis0Same(I,tmpA,[nh,nk,nl],k0);convAxis1Same(tmpA,tmpB,[nh,nk,nl],k1);convAxis2Same(tmpB,tmpA,[nh,nk,nl],k2);normalizeSmoothEdges(tmpA,[nh,nk,nl],[k0,k1,k2]);const mm=minMaxArray(tmpA);return{data:tmpA,min:mm.min,max:mm.max,meta:{type:kind,chebDb:chebDb,kernel:[sx,sy,sz],scale:scale}};}
+/* Smoothing kernels, one per axis: the magnitude of the Fourier transform of a Lanczos or Chebyshev window as long as
+the supercell times Scale, with one bin per box reciprocal-lattice spacing (1/supercell r.l.u.; 1 box unit for LAMMPS
+data). On a grid with another step the kernel is resampled at the grid points, so its width in r.l.u. does not depend on
+the step; on the default grid (step 1/supercell) nothing changes. */
+function resampleKernel(k,binsPerStep){if(k.length<2||!(binsPerStep>0)||Math.abs(binsPerStep-1)<1e-6)return k;const c=Math.floor(k.length/2),half=Math.floor(Math.max(c,k.length-1-c)/binsPerStep+1e-9),out=new Float64Array(2*half+1),at=i=>i>=0&&i<k.length?k[i]:0;let sum=0;for(let n=-half;n<=half;n++){const t=c+n*binsPerStep,i0=Math.floor(t),f=t-i0,v=at(i0)*(1-f)+at(i0+1)*f;out[n+half]=v;sum+=v;}if(!(sum>0))return Float64Array.of(1);for(let i=0;i<out.length;i++)out[i]/=sum;return out;}
+function smoothKernels(superCell,steps,cfg){const scale=Math.max(1,Math.floor(cfg.scale||1)),kind=(cfg.type||"lanczos").toLowerCase(),chebDb=Number.isFinite(cfg.chebDb)?cfg.chebDb:100;return[0,1,2].map(d=>{const cells=superCell&&superCell[d]||1,n=Math.max(1,Math.floor(cells*scale)),w=kind==="chebyshev"?chebwinWindow(n,chebDb):lanczosWindow(n),step=steps&&steps[d];return resampleKernel(fftMagShiftNorm(w,n),step>0?step*cells:1);});}
+function smoothIntensity3d(I,shape,ks){const nh=shape[0],nk=shape[1],nl=shape[2],grid=nh*nk*nl,tmpA=new Float64Array(grid),tmpB=new Float64Array(grid);convAxis0Same(I,tmpA,[nh,nk,nl],ks[0]);convAxis1Same(tmpA,tmpB,[nh,nk,nl],ks[1]);convAxis2Same(tmpB,tmpA,[nh,nk,nl],ks[2]);normalizeSmoothEdges(tmpA,[nh,nk,nl],ks);const mm=minMaxArray(tmpA);return{data:tmpA,min:mm.min,max:mm.max};}
 function idx(shape,ih,ik,il){return(ih*shape[1]+ik)*shape[2]+il;}
 function setPlot3dStatus(msg){const e=$("plot3dStatus");if(e)e.textContent=msg;}
 function cloneCamera(cam){if(!cam)return null;return JSON.parse(JSON.stringify(cam));}
@@ -1829,11 +1835,12 @@ if(nConf>1){const Ic=amp.I;if(!sumI)sumI=new Float64Array(Ic.length);for(let i=0
 let I=amp.I,min=amp.min,max=amp.max;
 if(nConf>1){for(let i=0;i<sumI.length;i++)sumI[i]/=nConf;I=sumI;const mm=minMaxArray(I);min=mm.min;max=mm.max;}
 let Iout=I,smoothMeta=null;
-/* The kernel spans one supercell step per axis; 1 x 1 x 1 (LAMMPS boxes, supercell 1) leaves the intensity as it is */
-const smoothDims=[0,1,2].map(d=>Math.max(1,Math.floor((r.super&&r.super[d]||1)*Math.max(1,Math.floor(smoothScale||1)))));
-if(smoothEnabled&&smoothDims.some(n=>n>1)){
+/* Kernels in box reciprocal-lattice spacings, resampled to the grid step (smoothKernels). A one-point kernel, as for
+LAMMPS boxes at Scale 1, leaves the intensity as it is. */
+const smoothK=smoothEnabled?smoothKernels(r.super,[hStepReq,kStepReq,lStepReq],{type:smoothType,chebDb:chebDb,scale:smoothScale}):null;
+if(smoothEnabled&&smoothK.some(kk=>kk.length>1)){
 status(`Applying ${smoothType} smoothing ...`);await new Promise(r=>setTimeout(r,0));
-const nh=shape[0],nk=shape[1],nl=shape[2],scale=Math.max(1,Math.floor(smoothScale||1)),sx=Math.max(1,Math.floor((r.super&&r.super[0]||1)*scale)),sy=Math.max(1,Math.floor((r.super&&r.super[1]||1)*scale)),sz=Math.max(1,Math.floor((r.super&&r.super[2]||1)*scale)),kind=(smoothType||"lanczos").toLowerCase(),w0=kind==="chebyshev"?chebwinWindow(sx,chebDb):lanczosWindow(sx),w1=kind==="chebyshev"?chebwinWindow(sy,chebDb):lanczosWindow(sy),w2=kind==="chebyshev"?chebwinWindow(sz,chebDb):lanczosWindow(sz),k0=fftMagShiftNorm(w0,sx),k1=fftMagShiftNorm(w1,sy),k2=fftMagShiftNorm(w2,sz),kernelMeta=[sx,sy,sz],tSm=performance.now();
+const scale=Math.max(1,Math.floor(smoothScale||1)),kind=(smoothType||"lanczos").toLowerCase(),k0=smoothK[0],k1=smoothK[1],k2=smoothK[2],kernelMeta=[k0.length,k1.length,k2.length],tSm=performance.now();
 if(gridAware&&navigator.gpu){try{await ensureWebgpuFftApi();}catch(_){/* CPU smoothing below */}}
 if((backend==="webgpu_fft"||gridAware)&&typeof window.type3Smooth3dWebgpu==="function"&&hasWebgpuFftApi()){
 try{
@@ -1844,10 +1851,10 @@ const smOut=await window.type3Smooth3dWebgpu(I,shape,[k0,k1,k2],o,onSmoothStage)
 Iout=normalizeSmoothEdges(smOut,shape,[k0,k1,k2]);const mm=minMaxArray(Iout);min=mm.min;max=mm.max;smoothMeta={type:kind,chebDb:chebDb,kernel:kernelMeta,scale:scale,engine:"webgpu"};
 }catch(e){
 status(`WebGPU smoothing failed (${e.message}); falling back to CPU smoothing ...`,"warn");await new Promise(r=>setTimeout(r,0));
-const sm=smoothIntensity3d(I,shape,r.super,{type:smoothType,chebDb:chebDb,scale:smoothScale});Iout=sm.data;min=sm.min;max=sm.max;smoothMeta={...sm.meta,engine:"cpu-fallback"};
+const sm=smoothIntensity3d(I,shape,smoothK);Iout=sm.data;min=sm.min;max=sm.max;smoothMeta={type:kind,chebDb:chebDb,kernel:kernelMeta,scale:scale,engine:"cpu-fallback"};
 }
 }else{
-const sm=smoothIntensity3d(I,shape,r.super,{type:smoothType,chebDb:chebDb,scale:smoothScale});Iout=sm.data;min=sm.min;max=sm.max;smoothMeta={...sm.meta,engine:"cpu"};
+const sm=smoothIntensity3d(I,shape,smoothK);Iout=sm.data;min=sm.min;max=sm.max;smoothMeta={type:kind,chebDb:chebDb,kernel:kernelMeta,scale:scale,engine:"cpu"};
 }
 timings.smooth=performance.now()-tSm;
 }

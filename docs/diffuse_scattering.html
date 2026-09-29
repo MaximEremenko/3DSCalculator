@@ -226,7 +226,8 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   </ul>
   <p>Lanczos is a good general-purpose smoothing filter. Chebyshev is more tunable and can produce stronger suppression of ringing depending on the chosen dB value.</p>
   <p>Smoothing keeps the intensity level: the kernel has unit sum, and near the edges of the grid it is renormalized over the part that lies inside, so a flat pattern stays flat. Sharp features become lower and wider, with the same integrated intensity.</p>
-  <p>The kernel spans the supercell along each axis, times Scale. LAMMPS boxes have no supercell, so at Scale 1 the kernel is a single point and smoothing is skipped.</p>
+  <p>The kernel is the transform of a window as long as the supercell along each axis, times Scale, with one point per spacing of the box's reciprocal lattice (1/supercell in r.l.u.). On a grid with another step the kernel is resampled, so the smoothing has the same width in r.l.u. whatever the step. For LAMMPS data the box is the cell, so the kernel is Scale box units long; at Scale 1 it is a single point and smoothing is skipped.</p>
+  <p>Smoothing also averages out the speckle of a single disordered configuration. For the MnO 160 K example compared with Paddison's data, R<sub>wp</sub> is 15% without smoothing and about 10% with it. The window type matters much less: Lanczos, Chebyshev 100 dB and Chebyshev 60 dB are within 0.3% of each other.</p>
 </section>
     <section id="backends">
       <h2>Backends And Scattering Choices</h2>
