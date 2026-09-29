@@ -546,7 +546,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <summary>Examples <span class="fine">LiFeO&#8322;, CaTiO&#8323;, PMN, MnO, LAMMPS spins</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
           <div class="subsection-body">
           <div class="examples"><span>Structures</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
-          <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-mag="both" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_160K_spins_01.txt Examples/magnetic/MnO_160K_spins_02.txt Examples/magnetic/MnO_160K_spins_03.txt Examples/magnetic/MnO_160K_spins_04.txt Examples/magnetic/MnO_160K_spins_05.txt Examples/magnetic/MnO_160K_spins_06.txt Examples/magnetic/MnO_160K_spins_07.txt Examples/magnetic/MnO_160K_spins_08.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Paramagnetic MnO at 160 K: 8 Monte Carlo snapshots of the J1-J2 model with the couplings Paddison refined to 160 K data (16384 spins each); a compute averages them">160 K</button></div>
+          <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-mag="both" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_160K_spins_01.txt Examples/magnetic/MnO_160K_spins_02.txt Examples/magnetic/MnO_160K_spins_03.txt Examples/magnetic/MnO_160K_spins_04.txt Examples/magnetic/MnO_160K_spins_05.txt Examples/magnetic/MnO_160K_spins_06.txt Examples/magnetic/MnO_160K_spins_07.txt Examples/magnetic/MnO_160K_spins_08.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" data-volume="cube" title="Paramagnetic MnO at 160 K: 8 Monte Carlo snapshots of the J1-J2 model with the couplings Paddison refined to 160 K data (16384 spins each); a compute averages them">160 K</button></div>
             <div class="examples"><span>LAMMPS spins</span><button class="chip-btn" type="button" data-example="Examples/lammps/fe_bcc_spins.data" data-range="-20,20,1" data-plane="0,0,1 0,0,0" data-mag="both" title="LAMMPS atom_style spin: bcc Fe, 2000 atoms, 2.2 muB spins with thermal disorder (hkl in box units: bcc (1 1 0) is (10 10 0))">Fe bcc</button><button class="chip-btn" type="button" data-example="Examples/lammps/skyrmion_film.data" data-range="-15,15,1;-15,15,1;0,0,1" data-mag="magnetic" data-scale="linear" title="LAMMPS atom_style spin: triple-q skyrmion lattice in a triangular Fe monolayer (3600 atoms); magnetic scattering on the l = 0 plane, hkl in box units">skyrmion film</button></div>
           </div>
         </details>
@@ -670,7 +670,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
 
   <section class="view area-iso" id="isoArea" aria-label="3D isosurface">
     <div class="view-head">
-      <h3>3D isosurface</h3><span class="view-tag" id="isoTag"></span>
+      <h3 id="isoTitle">3D isosurface</h3><span class="view-tag" id="isoTag"></span>
       <div class="view-actions"><button class="icon-btn" type="button" data-max="iso" title="Maximize"><svg class="i-max" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg><svg class="i-min" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button></div>
     </div>
     <div class="plot3dWrap" id="isoPlotWrap">
@@ -802,13 +802,14 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
       <details class="section" id="render3dBox" open>
         <summary><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg><span>3D view</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
         <div class="section-body">
+          <label title="Isosurfaces, or the faces of the volume with one octant cut away to show three planes through the origin">Volume<select id="volumeMode"><option value="iso" selected>Isosurfaces</option><option value="cube">Cut-away cube</option></select></label>
           <div class="grid3">
             <label title="Isosurface level as a percentile of the volume">Iso %<input id="isoPct" type="number" value="95" min="50" max="99.99" step="5"></label>
             <label>Surfaces<input id="isoCount" type="number" value="4" min="1" max="12" step="1"></label>
             <label title="Maximum number of voxels sent to the 3D views">Voxel cap<input id="voxelCap" type="number" value="220000" min="5000" step="1000"></label>
           </div>
           <div class="switch-grid">
-            <label class="switch"><input type="checkbox" id="showIso3d" data-bool checked><span>Isosurface</span></label>
+            <label class="switch"><input type="checkbox" id="showIso3d" data-bool checked><span>Volume</span></label>
             <label class="switch"><input type="checkbox" id="showPlane3d" data-bool checked><span>Slice plane</span></label>
             <label class="switch"><input type="checkbox" id="show2d" data-bool checked><span>2D map</span></label>
             <label class="switch"><input type="checkbox" id="auto3d" data-bool checked><span>Auto refresh</span></label>
@@ -1557,6 +1558,28 @@ function getVolumeSample(res,maxVox,mode){const key=[res.shape.join("x"),res.min
 function isNonOrthBq(Bq){if(!Array.isArray(Bq))return false;const a=mul([1,0,0],Bq),b=mul([0,1,0],Bq),c=mul([0,0,1],Bq),na=normVec(a),nb=normVec(b),nc=normVec(c);if(!(na>1e-12&&nb>1e-12&&nc>1e-12))return false;const ab=Math.abs(dot(a,b)/(na*nb)),ac=Math.abs(dot(a,c)/(na*nc)),bc=Math.abs(dot(b,c)/(nb*nc));return ab>1e-3||ac>1e-3||bc>1e-3;}
 function sampleHklCustom(sample){const cd=new Array(sample.count);for(let i=0;i<sample.count;i++)cd[i]=[sample.hklH[i],sample.hklK[i],sample.hklL[i]];return cd;}
 function makeIsoFallbackTrace(sample,isoMin){const keep=[];for(let i=0;i<sample.count;i++)if(sample.v[i]>=isoMin)keep.push(i);if(!keep.length)return null;const maxPts=120000,stride=Math.max(1,Math.ceil(keep.length/maxPts)),n=Math.max(1,Math.ceil(keep.length/stride)),x=new Float32Array(n),y=new Float32Array(n),z=new Float32Array(n),val=new Float32Array(n),cd=new Array(n);let p=0;for(let i=0;i<keep.length;i+=stride){const j=keep[i];x[p]=sample.x[j];y[p]=sample.y[j];z[p]=sample.z[j];val[p]=sample.v[j];cd[p]=[sample.hklH[j],sample.hklK[j],sample.hklL[j]];p++;if(p>=n)break;}return{type:"scatter3d",mode:"markers",x,y,z,customdata:cd,marker:{size:2.2,opacity:0.26,color:val,colorscale:getColorPreset().plotly,cmin:isoMin,cmax:sample.max},name:"Iso fallback cloud",hovertemplate:"H=%{customdata[0]:.5g}<br>K=%{customdata[1]:.5g}<br>L=%{customdata[2]:.5g}<br>Qx=%{x:.5g}<br>Qy=%{y:.5g}<br>Qz=%{z:.5g}<br>V=%{marker.color:.5g}<extra></extra>"};}
+/* Cut-away cube: the six faces of the grid volume with the octant toward the default camera (h, k and l beyond the cut
+point) removed, so that three planes through the cut point show, as in Paddison's figures. The cut point is the grid
+point nearest the origin, or the middle of an axis that does not contain 0. Faces are sampled at up to about 160 points
+per side and drawn flat, in the colors and levels of the 2D map. */
+function makeCubeTraces(res,mode){const shape=res.shape;if(shape.some(n=>n<2))return null;
+const axes=[res.h,res.k,res.l],cut=axes.map(ax=>{if(ax[0]<=0&&ax[ax.length-1]>=0){let b=0;for(let i=1;i<ax.length;i++)if(Math.abs(ax[i])<Math.abs(ax[b]))b=i;return b;}return Math.floor(ax.length/2);});
+const pick=(n,c)=>{const st=Math.max(1,Math.ceil(n/160)),out=new Set([0,n-1,c]);for(let i=0;i<n;i+=st)out.add(i);return Array.from(out).sort((a,b)=>a-b);};
+const sel=shape.map((n,d)=>pick(n,cut[d])),lv=getActiveColorLevelWindow(),gb=getGlobalDisplayBounds(mode),cmin=lv?lv.cmin:gb.min,cmax=lv?lv.cmax:gb.max,traces=[];let points=0;
+/* the face where axis d is at index f; keep(a,b) over the other two axes, in h, k, l order */
+const face=(d,f,keep,name)=>{const [pa,qa]=[0,1,2].filter(x=>x!==d),H=[],K=[],L=[],C=[];for(const a of sel[pa]){const hr=[],kr=[],lr=[],cr=[];for(const b of sel[qa]){const ijk=[0,0,0];ijk[d]=f;ijk[pa]=a;ijk[qa]=b;const ok=keep(a,b);hr.push(ok?res.h[ijk[0]]:NaN);kr.push(ok?res.k[ijk[1]]:NaN);lr.push(ok?res.l[ijk[2]]:NaN);cr.push(ok?scaledVal(res.I[idx(shape,ijk[0],ijk[1],ijk[2])],mode):NaN);if(ok)points++;}H.push(hr);K.push(kr);L.push(lr);C.push(cr);}
+const q=transformSurfaceHklToQ(H,K,L,res.Bq);traces.push({type:"surface",x:q.x,y:q.y,z:q.z,surfacecolor:planeColor(res,C),cmin,cmax,cauto:false,colorscale:getColorPreset().plotly,showscale:!traces.length,colorbar:{thickness:14,len:0.8,outlinewidth:0,tickfont:{color:plotTheme().font}},opacity:1,lighting:{ambient:1,diffuse:0,specular:0,roughness:1,fresnel:0},hovertext:makeSurfaceHoverText(H,K,L,q.x,q.y,q.z,C),hoverinfo:"text",name});};
+const [ci,cj,cm]=cut,last=shape.map(n=>n-1);
+face(0,0,()=>true,"h min");face(1,0,()=>true,"k min");face(2,0,()=>true,"l min");
+face(0,last[0],(j,m)=>!(j>cj&&m>cm),"h max");face(1,last[1],(i,m)=>!(i>ci&&m>cm),"k max");face(2,last[2],(i,j)=>!(i>ci&&j>cj),"l max");
+face(0,ci,(j,m)=>j>=cj&&m>=cm,"h cut");face(1,cj,(i,m)=>i>=ci&&m>=cm,"k cut");face(2,cm,(i,j)=>i>=ci&&j>=cj,"l cut");
+return{traces,points,cut:cut.map((c,d)=>axes[d][c])};}
+function updateVolumeUi(){const cube=$("volumeMode")&&$("volumeMode").value==="cube";if($("isoTitle"))$("isoTitle").textContent=cube?"3D cube":"3D isosurface";$("isoPct").disabled=$("isoCount").disabled=cube;}
+/* A new plane that the plane view's camera would see edge-on turns the camera toward the plane's normal: once per plane,
+so the user's own rotation stays. The scene is isotropic in Q, so the camera eye is a direction in Q. */
+function planeCameraFix(res){if(getSliceMode()!=="plane"||!state.plane||!window.Plotly)return;const n=state.plane.normalUnit||norm3(state.plane.normal),key=n.map(v=>v.toFixed(4)).join(",");if(state.planeCamKey===key)return;state.planeCamKey=key;
+const b=planeBasisFromNormal(n),nq=norm3(cross(hklVecToQ(b.u,res.Bq),hklVecToQ(b.v,res.Bq))),cam=readSceneCamera("plot3dPlane"),eye=cam&&cam.eye?[cam.eye.x,cam.eye.y,cam.eye.z]:[1.25,1.25,1.25],r=Math.hypot(eye[0],eye[1],eye[2])||2.165,e=eye.map(v=>v/r),d=dot(nq,e);if(Math.abs(d)>0.3)return;
+const sg=d<0?-1:1,t=norm3([0,1,2].map(a=>0.8*sg*nq[a]+0.6*e[a])),next={x:t[0]*r,y:t[1]*r,z:t[2]*r};window.Plotly.relayout("plot3dPlane",{"scene.camera.eye":next});state.sceneCamera.plane={...(cam||{}),eye:next};}
 /* Plane colors: points without a value count as zero in a difference (as in its isosurfaces) instead of the bottom color */
 function planeColor(res,c){if(!res||!res.signed)return c;const fix=v=>Number.isFinite(v)?v:0;return c.map(row=>Array.isArray(row)?row.map(fix):fix(row));}
 function makePlaneTrace(res,axis,fix,mode){let H=[],K=[],L=[],c=[];if(axis==="l"){for(let ih=0;ih<res.shape[0];ih++){const hr=[],kr=[],lr=[],cr=[];for(let ik=0;ik<res.shape[1];ik++){const h=res.h[ih],k=res.k[ik],l=res.l[fix];hr.push(h);kr.push(k);lr.push(l);cr.push(scaledVal(res.I[idx(res.shape,ih,ik,fix)],mode));}H.push(hr);K.push(kr);L.push(lr);c.push(cr);}}else if(axis==="h"){for(let ik=0;ik<res.shape[1];ik++){const hr=[],kr=[],lr=[],cr=[];for(let il=0;il<res.shape[2];il++){const h=res.h[fix],k=res.k[ik],l=res.l[il];hr.push(h);kr.push(k);lr.push(l);cr.push(scaledVal(res.I[idx(res.shape,fix,ik,il)],mode));}H.push(hr);K.push(kr);L.push(lr);c.push(cr);}}else{for(let ih=0;ih<res.shape[0];ih++){const hr=[],kr=[],lr=[],cr=[];for(let il=0;il<res.shape[2];il++){const h=res.h[ih],k=res.k[fix],l=res.l[il];hr.push(h);kr.push(k);lr.push(l);cr.push(scaledVal(res.I[idx(res.shape,ih,fix,il)],mode));}H.push(hr);K.push(kr);L.push(lr);c.push(cr);}}const q=transformSurfaceHklToQ(H,K,L,res.Bq),custom=makeSurfaceHklQCustom(H,K,L,q.x,q.y,q.z),hover=makeSurfaceHoverText(H,K,L,q.x,q.y,q.z,c),trace={type:"surface",x:q.x,y:q.y,z:q.z,customdata:custom,hovertext:hover,hoverinfo:"text",surfacecolor:planeColor(res,c),showscale:false,opacity:0.86,colorscale:getColorPreset().plotly,name:`Slice plane ${axis.toUpperCase()}=${fix}`};const lv=getActiveColorLevelWindow();if(lv){trace.cauto=false;trace.cmin=lv.cmin;trace.cmax=lv.cmax;}return trace;}
@@ -1699,7 +1722,9 @@ setPlot3dStatus("Rendering 3D view ...");
 const plotly=await ensurePlotly(),res=state.res,mode=$("scale").value,maxVox=Math.max(5000,Math.floor(Number($("voxelCap").value)||220000)),isoPct=Math.max(50,Math.min(99.99,Number($("isoPct").value)||95)),isoCount=Math.max(1,Math.min(12,Math.floor(Number($("isoCount").value)||4))),showIso=$("showIso3d").value==="1",showPlane=$("showPlane3d").value==="1";
 const isoTraces=[];
 let isoMsg="iso=off";
-if(showIso&&res.shape.some(n=>n<2))isoMsg="iso=off (the data is a single plane, which has no isosurfaces)";
+const volumeCube=$("volumeMode")&&$("volumeMode").value==="cube";
+if(showIso&&res.shape.some(n=>n<2))isoMsg=`${volumeCube?"cube":"iso"}=off (the data is a single plane, which has no ${volumeCube?"volume":"isosurfaces"})`;
+else if(showIso&&volumeCube){setPlot3dStatus("Rendering the cut-away cube ...");const cube=makeCubeTraces(res,mode);isoTraces.push(...cube.traces);isoMsg=`cube (cut at h ${cube.cut[0]}, k ${cube.cut[1]}, l ${cube.cut[2]}; ${cube.points} points)`;}
 else if(showIso){
 setPlot3dStatus("Rendering 3D isosurface ...");
 const sample=getVolumeSample(res,maxVox,mode);
@@ -1773,6 +1798,7 @@ if(!state.sceneCamera.iso&&keepIsoCam)state.sceneCamera.iso=cloneCamera(keepIsoC
 if(!state.sceneCamera.plane&&keepPlaneCam)state.sceneCamera.plane=cloneCamera(keepPlaneCam);
 wireCameraTracking("plot3dIso","iso");
 wireCameraTracking("plot3dPlane","plane");
+if(showPlane&&planeTraces.length)planeCameraFix(res);
 state.last3dStamp=performance.now();
 setPlot3dStatus(`3D ready. ${isoMsg}. plane=${planeTraces.length?"on":"off"}.`);
 }
@@ -2453,7 +2479,7 @@ $("cmpView").addEventListener("click",e=>{const b=e.target.closest("button[data-
 $("cmpScale").addEventListener("change",refitComparison);$("cmpBg").addEventListener("change",refitComparison);
 $("cmpRemove").addEventListener("click",removeData);
 $("cmpUseGrid").addEventListener("click",()=>{if(!state.data)return;applyDataGrid(state.data);status(`Grid set to the data's ${state.data.shape.join(" × ")} grid. Compute to compare.`,"ok");});
-$("colorMap").addEventListener("change",()=>{draw();var cs=getColorPreset().plotly;if(window.Plotly){var isoGd=$("plot3dIso"),planeGd=$("plot3dPlane");if(isoGd&&Array.isArray(isoGd.data)&&isoGd.data.length){var t0=isoGd.data[0];var isoIdx=[];isoGd.data.forEach(function(d,i){if(d.type==="isosurface")isoIdx.push(i);});if(t0&&t0.type==="scatter3d")Plotly.restyle(isoGd,{"marker.colorscale":[cs]},0);else if(isoIdx.length)Plotly.restyle(isoGd,{colorscale:isoIdx.map(function(){return cs;})},isoIdx);}if(planeGd&&Array.isArray(planeGd.data)&&planeGd.data.length)Plotly.restyle(planeGd,{colorscale:[cs]},0);}});
+$("colorMap").addEventListener("change",()=>{draw();var cs=getColorPreset().plotly;if(window.Plotly){var isoGd=$("plot3dIso"),planeGd=$("plot3dPlane");if(isoGd&&Array.isArray(isoGd.data)&&isoGd.data.length){var t0=isoGd.data[0];var isoIdx=[];isoGd.data.forEach(function(d,i){if(d.type==="isosurface"||d.type==="surface")isoIdx.push(i);});if(t0&&t0.type==="scatter3d")Plotly.restyle(isoGd,{"marker.colorscale":[cs]},0);else if(isoIdx.length)Plotly.restyle(isoGd,{colorscale:isoIdx.map(function(){return cs;})},isoIdx);}if(planeGd&&Array.isArray(planeGd.data)&&planeGd.data.length)Plotly.restyle(planeGd,{colorscale:[cs]},0);}});
 $("resetLevels").addEventListener("click",()=>{resetDisplayLevels();draw();scheduleLevelSync3d(true);});
 $("planeApply").addEventListener("click",()=>{state.planeMoving=false;state.planeMoveCameraLock=null;state.render3dEpoch++;captureSceneCamera("plot3dPlane","plane");const sm=getSliceMode();if(sm==="avgvol"){applyAvgVolFromInputs();}else{applyPlaneFromInputs();}draw();if(sm==="plane"||sm==="avgvol"){const resId=sm==="avgvol"?"avRes":"pRes";const fullRes=Math.max(64,Math.min(260,Math.floor(readNumberInput(resId,200))));updatePlaneTraceFast(fullRes).catch(()=>{});}else{schedule3dRender(false,220);}});
 $("planeReset").addEventListener("click",()=>{resetPlaneToolDefaults();});
@@ -2474,6 +2500,7 @@ $("openSliceWin").addEventListener("click",()=>{try{openSliceWindow();}catch(err
 $("closeSliceWin").addEventListener("click",closeSliceWindow);
 $("show2d").addEventListener("change",()=>{update2dVisibility();if($("show2d").value==="1"){draw();}});
 for(const id of ["isoPct","isoCount","voxelCap","showIso3d","showPlane3d","auto3d"]){$(id).addEventListener("change",()=>schedule3dRender(false));}
+$("volumeMode").addEventListener("change",()=>{updateVolumeUi();schedule3dRender(true,0);});
 window.addEventListener("beforeunload",closeSliceWindow);
 /* Redraw canvas on resize so HiDPI backing store stays correct */
 let _resizeTimer=0;
@@ -2817,6 +2844,7 @@ bind();draw();
         // data-mag: the magnetic mode; data-scale: the display scale of the first result
         if(btn.dataset.mag&&$("magMode")){$("magMode").value=btn.dataset.mag;updateMagneticUi();}
         state.pendingScale=btn.dataset.scale||null;
+        if(btn.dataset.volume&&$("volumeMode")){$("volumeMode").value=btn.dataset.volume;updateVolumeUi();}
         var plane=(btn.dataset.plane||"").split(/\s+/).map(function(t){return t.split(",").map(Number);});
         state.pendingPlane=plane.length===2&&plane.every(function(v){return v.length===3&&v.every(Number.isFinite);})?{normal:plane[0],origin:plane[1]}:null;
       }catch(err){

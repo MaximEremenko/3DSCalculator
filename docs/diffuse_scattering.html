@@ -71,7 +71,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
         <tr><th>Area</th><th>Contents</th></tr>
         <tr><td>Setup (left)</td><td>Four cards in workflow order: Structure, Reciprocal grid, Scattering and Computation. <strong>Compute diffuse</strong> and the status line stay at the foot of the panel. Click the status line to read the whole message, including timings.</td></tr>
         <tr><td>3D slice plane</td><td>A planar cut through the diffuse volume in reciprocal space.</td></tr>
-        <tr><td>3D isosurface</td><td>Constant-intensity surfaces of the diffuse volume.</td></tr>
+        <tr><td>3D isosurface (3D cube)</td><td>Constant-intensity surfaces of the diffuse volume, or the volume as a cube with one octant cut away (<strong>Volume</strong> in the 3D view tools).</td></tr>
         <tr><td>2D slice map</td><td>The current slice in a 2D frame, with a color bar whose handles set the display levels.</td></tr>
         <tr><td>View (right)</td><td>Slice, Color, 3D view and Export sections. Each section folds, and the browser remembers which ones are open.</td></tr>
       </table>
@@ -189,7 +189,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   </table>
   <p>Select the RMCProfile files together, or load the <code>.rmc6f</code> first. The spin file attaches to the loaded structure, and the <code>.dat</code> can come before or after it.</p>
   <p>The <strong>MnO spins</strong> example buttons load <code>Examples/magnetic</code>: the MnO type-II antiferromagnet and a random configuration (an ideal paramagnet, as at infinite temperature) as Scatty files, and the antiferromagnet again in RMCProfile's format. They set the grid to &minus;2&hellip;2 in steps of 1/6, and after the first compute the slice opens on the <em>h</em> = &frac12; plane. The ordered configuration is a perfect crystal, so its nuclear diffuse scattering is zero after average subtraction and its magnetic scattering is sharp Bragg peaks at (&frac12; &frac12; &frac12;)-type positions: the <em>h</em> = 0 plane holds only numerical noise.</p>
-  <p>The <strong>160 K</strong> button loads paramagnetic MnO: 8 Monte Carlo snapshots (16&times;16&times;16 cells, 16,384 spins each) of the J<sub>1</sub>&ndash;J<sub>2</sub> Heisenberg model, using the couplings Paddison refined with Spinteract against single-crystal data at 160 K (J<sub>1</sub> = 3.26 K, J<sub>2</sub> = 4.45 K). A compute averages the 8 snapshots (see <a href="#configurations">Several Configurations</a>). The scattering is diffuse, with broad maxima at the (&frac12; &frac12; &frac12;)-type positions where the antiferromagnet has its Bragg peaks. Against Paddison's data, which ship with Spinteract as <code>MnO_xtal_data_01.txt</code>, the average fits with R<sub>wp</sub> about 10%; Spinteract's own fit gives 8.8%. <code>tools/make_mno_160k_spins.py</code> writes the snapshots.</p>
+  <p>The <strong>160 K</strong> button loads paramagnetic MnO: 8 Monte Carlo snapshots (16&times;16&times;16 cells, 16,384 spins each) of the J<sub>1</sub>&ndash;J<sub>2</sub> Heisenberg model, using the couplings Paddison refined with Spinteract against single-crystal data at 160 K (J<sub>1</sub> = 3.26 K, J<sub>2</sub> = 4.45 K). A compute averages the 8 snapshots (see <a href="#configurations">Several Configurations</a>), and the volume view opens as a cut-away cube. The scattering is diffuse, with broad maxima at the (&frac12; &frac12; &frac12;)-type positions where the antiferromagnet has its Bragg peaks. Against Paddison's data, which ship with Spinteract as <code>MnO_xtal_data_01.txt</code>, the average fits with R<sub>wp</sub> about 10%; Spinteract's own fit gives 8.8%. <code>tools/make_mno_160k_spins.py</code> writes the snapshots.</p>
   <p>The <strong>LAMMPS spins</strong> buttons load <code>Examples/lammps</code>, two <code>atom_style spin</code> data files written by <code>tools/make_lammps_examples.py</code>. Each sets its magnetic mode, so the result does not depend on the example opened before.</p>
   <ul>
     <li><strong>Fe bcc</strong>: 10&times;10&times;10 bcc cells with 2.2 &mu;<sub>B</sub> spins tilted about +z (&lang;cos &theta;&rang; = 0.8) and random displacements, computed as nuclear + magnetic. Ferromagnetic Bragg peaks sit on the nuclear ones, on top of paramagnetic and thermal diffuse scattering. After the first compute the slice opens on the <em>l</em> = 0 plane.</li>
@@ -249,11 +249,13 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
 <section>
       <h2>3D View Controls</h2>
       <ul>
+        <li><strong>Volume</strong>: what the volume view shows, <strong>Isosurfaces</strong> or a <strong>Cut-away cube</strong>. The cube draws the six faces of the grid volume and removes the octant toward the default camera, where h, k and l are beyond the cut point. That exposes three planes through the cut point, as in Paddison's figures. The cut point is the grid point nearest the origin, or the middle of an axis that does not contain 0. Faces use the colors and levels of the 2D map and are sampled at up to about 160 points per side.</li>
         <li><strong>Iso %</strong>: selects the intensity percentile used for the isosurface threshold. For example, 95 means the isosurface is built from the top 5% of intensity values in the sampled 3D volume.</li>
         <li><strong>Surfaces</strong>: number of isosurfaces rendered.</li>
         <li><strong>Voxel cap</strong>: downsampling limit used before isosurface rendering to keep the 3D view tractable.</li>
-        <li><strong>Isosurface</strong>, <strong>Slice plane</strong>, <strong>2D map</strong>: show or hide each view's content. With the 2D map off, the 3D views take the full height.</li>
+        <li><strong>Volume</strong>, <strong>Slice plane</strong>, <strong>2D map</strong>: show or hide each view's content. With the 2D map off, the 3D views take the full height.</li>
         <li><strong>Auto refresh</strong>: redraw the 3D views when the slice or these settings change; otherwise use <strong>Render 3D</strong>.</li>
+        <li>When a new plane would be seen edge-on in the slice-plane view, such as the (h h l) plane from the default camera, the camera turns toward the plane's normal. Your own rotations are kept.</li>
       </ul>
     </section>
     <section>
