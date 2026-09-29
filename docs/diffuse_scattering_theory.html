@@ -68,14 +68,14 @@
 </section>
 
 <section>
-  <h2>Normalization Controls</h2>
-  <p><code>Normalize Nq</code> divides the final displayed intensity by the grid-point count.</p>
-
-  <h3>Normalize Nq (per-Q-point normalization)</h3>
-  <p>When ON (default), the final intensity array is divided by the total number of reciprocal-space grid points:</p>
-  <span class="eq">I<sub>out</sub>(<strong>Q</strong>) = I(<strong>Q</strong>) / N<sub>Q</sub></span>
-  <p>where N<sub>Q</sub> = N<sub>h</sub> &times; N<sub>k</sub> &times; N<sub>l</sub> is the grid size. This makes the intensity independent of grid density so that results at different resolutions are comparable.</p>
-  <p>When OFF, the raw summed intensity is kept. This is mainly useful for debugging or for absolute-scale comparisons where the grid size is fixed.</p>
+  <h2>Normalization</h2>
+  <p>The <code>Normalize</code> control sets the divisor applied to the final intensity:</p>
+  <table>
+    <tr><th>Setting</th><th>Result</th></tr>
+    <tr><td>per atom (default)</td><td>I<sub>out</sub>(<strong>Q</strong>) = I(<strong>Q</strong>) / N<sub>atoms</sub>, where N<sub>atoms</sub> counts every atom in the configuration, also when the element filter selects a subset. This is the convention of RMCProfile and Scatty. With neutron scattering lengths in 10<sup>&minus;12</sup> cm the result is in barn&nbsp;sr<sup>&minus;1</sup> per atom; X-ray results are in electron units per atom.</td></tr>
+    <tr><td>per Q point (legacy)</td><td>I<sub>out</sub>(<strong>Q</strong>) = I(<strong>Q</strong>) / N<sub>Q</sub> with N<sub>Q</sub> = N<sub>h</sub> &times; N<sub>k</sub> &times; N<sub>l</sub>, the former default. The value at a given <strong>Q</strong> then depends on how many grid points were computed (a 201&sup3; grid reads about 8&times; lower than a 101&sup3; grid), so use it only to reproduce earlier results.</td></tr>
+    <tr><td>none</td><td>The raw |&Delta;A(<strong>Q</strong>)|&sup2;.</td></tr>
+  </table>
 </section>
 
 
