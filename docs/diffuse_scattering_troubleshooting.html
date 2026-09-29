@@ -87,6 +87,16 @@
   </ul>
 </section>
 <section>
+  <h2>Magnetic Files Are Refused</h2>
+  <ul>
+    <li><em>Load the structure (.rmc6f) before its spin configuration</em>: select the <code>.rmc6f</code>, spin <code>.cfg</code> and <code>.dat</code> together, or load the <code>.rmc6f</code> first.</li>
+    <li><em>N spins for X but only M X atoms</em>, or <em>Spin k (species X) is on a Y atom</em>: the spin file belongs to another configuration, or RMCProfile's atom-type order differs from the rmc6f. Load the run's <code>.dat</code>, whose <code>ATOMS</code> line gives the type order.</li>
+    <li><em>rmc6f lattice vectors do not match the Cell line</em>: the <code>Lattice vectors</code> block and the <code>Cell</code> line describe different cells, so the spin frame is ambiguous.</li>
+    <li>A <code>.cfg</code> that is not a spin configuration is refused. Atomic configurations are read from <code>.rmc6f</code>.</li>
+    <li>If the Magnetic options stay disabled, check that the radiation is neutron and that a spin configuration is attached.</li>
+  </ul>
+</section>
+<section>
   <h2>Exports</h2>
   <p>If a plot export is disabled, compute the diffuse volume first. Slice and 3D export actions are tied to available results and active views.</p>
 </section>

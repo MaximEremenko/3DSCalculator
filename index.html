@@ -524,6 +524,7 @@ html[data-theme="light"] .sidebar .fine{color:#5a6b82}
 html[data-theme="light"] .sidebar .mono{color:#1a2332}
 html[data-theme="light"] .sidebar .elem-filter label{color:#1a2332}
 html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
+.magTable{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;margin:4px 0}.magTable th,.magTable td{padding:2px 3px;text-align:left;overflow:hidden;text-overflow:ellipsis}.magTable th{font-weight:600}.magTable th:nth-child(1){width:17%}.magTable th:nth-child(2){width:14%}.magTable th:nth-child(3){width:35%}.magTable th:nth-child(4){width:16%}.warnText{color:#fbbf24}html[data-theme="light"] .warnText{color:#92400e}
 </style>
 </head>
 <body>
@@ -564,7 +565,7 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
       <div class="sb-col">
         <section class="sb-section">
           <h2 class="sb-heading">File Input</h2>
-          <div id="drop" class="drop" tabindex="0">Drop .rmc6f or unified structure .h5 here or click<input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt" hidden /></div>
+          <div id="drop" class="drop" tabindex="0">Drop .rmc6f, unified .h5, LAMMPS or Scatty files here or click (RMCProfile spins: add the .cfg and .dat)<input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt,.cfg,.dat" multiple hidden /></div>
           <div class="meta">
             <div class="k">File</div><div id="mFile">-</div>
             <div class="k">Atoms</div><div id="mAtoms">-</div>
@@ -630,6 +631,7 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
                 <label>Paramagnet<select id="magPara"><option value="0" selected>keep</option><option value="1">subtract (2/3)&Sigma;&mu;&sup2;f&sup2;</option></select></label>
                 <label>Spins<span id="magInfo" class="small">no spins loaded</span></label>
               </div>
+              <div id="magSpecies"></div>
               <hr class="sectionDivider">
               <h3>Smoothing</h3>
               <div class="row4">
@@ -974,6 +976,7 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
 <script src="./js/unified_hdf5.js"></script>
 <script src="./js/magnetic_form_factors.js"></script>
 <script src="./js/scatty_reader.js"></script>
+<script src="./js/rmcprofile_magnetic.js"></script>
 <script src="./js/type1_grid.js"></script>
 <script src="./js/wgpu_type1.js"></script>
 <script>
@@ -2237,10 +2240,14 @@ const h5=await ensureUnifiedH5(),bytes=new Uint8Array(await f.arrayBuffer()),mod
 parsed=parseUnifiedRMC(f.name,model);
 }else{
 const text=await f.text();
+if(window.RmcMagnetic&&window.RmcMagnetic.detectSpinConfiguration(text)){attachRmcSpins(f.name,text);return;}
+if(/\.cfg$/i.test(f.name))throw new Error(`${f.name} is not an RMCProfile spin configuration; load atomic configurations as .rmc6f.`);
+if(/\.dat$/i.test(f.name)&&!/LAMMPS\s+data\s+file/i.test(text.slice(0,512))){loadMagnetismDat(f.name,text);return;}
 parsed=window.ScattyReader&&window.ScattyReader.detect(text)?parseScatty(f.name,text):/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512))?parseLammps(f.name,text):parseRMC(f.name,text);
 }
 if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
-if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.res=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
+if(state.rmcMagnetism&&state.rmcMagnetism.types&&!state.rmcMagnetism.types.every(t=>parsed.present.some(e=>e.toLowerCase()===String(t).toLowerCase())))state.rmcMagnetism=null;
+if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.res=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();renderMagneticSpecies();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
 const sourceWarning=parsed.sourceWarnings&&parsed.sourceWarnings.length?parsed.sourceWarnings.join(" "):"";
 if(parsed.unknown.length&&!parsed.magneticOnly)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");
 else if(sourceWarning)status("Loaded "+f.name+". "+sourceWarning,"warn");
@@ -2293,6 +2300,16 @@ valence.disabled=!(type==="electron"&&model==="ion_peng");
 valence.placeholder=model==="ion_peng"?"Fe:2,O:-2":"";
 }
 }
+function magneticElement(sp){return String(sp.element||sp.label||"").replace(/[\d+-]+$/,"").toLowerCase();}
+function magneticIonsFor(sp){const el=magneticElement(sp);return window.MagneticFormFactors.ions().filter(i=>i.ion.replace(/\d+$/,"").toLowerCase()===el);}
+function renderMagneticSpecies(){const box=$("magSpecies");if(!box)return;const mag=state.rmc&&state.rmc.magnetic;if(!mag){box.innerHTML="";return;}const ff=window.MagneticFormFactors,counts=mag.species.map(()=>0),scatty=/^Scatty/.test(mag.source||""),unitSpins=/^RMCProfile/.test(mag.source||"");for(const t of mag.speciesOfAtom)if(t>=0)counts[t]++;
+const rows=mag.species.map((sp,t)=>{const ions=magneticIonsFor(sp),fileOpt=sp.fileFormFactor?`<option value="file"${sp.formFactorSource==="table"?"":" selected"}>${scatty?"Scatty file":".dat file"}</option>`:"",ionOpts=ions.map((i,n)=>`<option value="${n}"${sp.formFactorSource==="table"&&sp.formFactor.j0===i.j0?" selected":""}>${i.ion.replace(/(\d+)$/,"$1+")} ${i.config}</option>`).join(""),none=fileOpt||ionOpts?"":"<option>none (f = 1)</option>",sel=ions.find(i=>sp.formFactorSource==="table"&&sp.formFactor.j0===i.j0),hasJ2=!!sp.formFactor.j2,tip=!hasJ2?"no &lt;j2&gt; coefficients":sel&&/[45]f/.test(sel.config)?`(2 - gJ)/gJ = ${ff.suggestedC2(sel).toFixed(3)} for ${sel.term}`:"f = &lt;j0&gt; + C2 &lt;j2&gt;";
+return`<tr><td>${xmlEsc(sp.label)}</td><td>${counts[t]}</td><td><select data-t="${t}" data-k="ff">${fileOpt}${ionOpts}${none}</select></td><td><input data-t="${t}" data-k="c2" type="number" step="0.05" value="${sp.formFactor.c2||0}" title="${tip}"${hasJ2?"":" disabled"}></td><td><input data-t="${t}" data-k="scale" type="number" step="0.1" value="${sp.scale??1}"></td></tr>`;}).join("");
+box.innerHTML=`<table class="magTable"><tr><th>Species</th><th>Spins</th><th>Form factor</th><th>C2</th><th title="${unitSpins?"moment per spin in Bohr magnetons (MAGNETIC_MOMENTS)":"factor applied to the moments of the file"}">${unitSpins?"&mu; (&mu;B)":"Scale"}</th></tr>${rows}</table>`+(mag.notes&&mag.notes.length?`<div class="small warnText">${mag.notes.map(xmlEsc).join("; ")}</div>`:"");
+box.querySelectorAll("[data-k]").forEach(elm=>elm.addEventListener("change",()=>{const sp=mag.species[Number(elm.dataset.t)],k=elm.dataset.k,v=Number(elm.value);if(k==="scale"){if(Number.isFinite(v))sp.scale=v;}else if(k==="c2"){if(Number.isFinite(v))sp.formFactor={...sp.formFactor,c2:v};}else if(elm.value==="file"){sp.formFactor={...sp.fileFormFactor};sp.formFactorSource=scatty?"file":"dat";}else{const ion=magneticIonsFor(sp)[v];if(ion){sp.ion=ion.ion;sp.formFactor={j0:ion.j0,j2:ion.j2,c2:sp.formFactor.c2||0};sp.formFactorSource="table";}}renderMagneticSpecies();updateMagneticUi();}));}
+function attachRmcSpins(name,text){const r=state.rmc;if(!r)throw new Error(`Load the structure (.rmc6f) before its spin configuration ${name}.`);const cfg=window.RmcMagnetic.parseSpinConfiguration(text);r.magnetic=window.RmcMagnetic.attachSpins(r,cfg,state.rmcMagnetism);r.spinConfiguration={name,cfg};if($("magMode").value==="nuclear")$("magMode").value="both";renderMagneticSpecies();updateMagneticUi();const notes=r.magnetic.notes,other=/\.rmc6f$/i.test(r.file||"")?"":" Spins were mapped by atom-type order onto a structure that is not an .rmc6f.";status(`Attached ${name}: ${magneticSummary(r)}, ${state.rmcMagnetism?`moments and form factors from ${state.rmcMagnetism.file}`:"1 muB moments and tabulated form factors until the .dat with the MAGNETISM block is loaded"}.${other}${notes.length?` Notes: ${notes.join("; ")}.`:""}`,notes.length||other?"warn":"ok");}
+function loadMagnetismDat(name,text){const block=window.RmcMagnetic.parseMagnetismBlock(text);if(!block){status(`${name} has no active MAGNETISM block; nothing to apply.`,"warn");return;}block.file=name;state.rmcMagnetism=block;const r=state.rmc,moments=block.moments&&block.moments.length?`moments ${block.moments.join(", ")} muB`:"no MAGNETIC_MOMENTS",summary=`${moments}, ${block.formFactors.length} FORM_FACTOR record(s)`;if(r&&r.spinConfiguration){r.magnetic=window.RmcMagnetic.attachSpins(r,r.spinConfiguration.cfg,block);renderMagneticSpecies();updateMagneticUi();const notes=r.magnetic.notes;status(`Applied MAGNETISM from ${name} (${summary}) to ${r.spinConfiguration.name}.${notes.length?` Notes: ${notes.join("; ")}.`:""}`,notes.length?"warn":"ok");}else status(`Read MAGNETISM from ${name}: ${summary}. It applies to the next RMCProfile spin configuration.`,"ok");}
+async function onFiles(list){const rank=f=>/\.cfg$/i.test(f.name)?2:/\.dat$/i.test(f.name)?1:0,files=Array.from(list||[]).sort((a,b)=>rank(a)-rank(b));for(const f of files)await onFile(f);}
 function magneticSummary(r){const m=r.magnetic,n=Array.from(m.speciesOfAtom).filter(v=>v>=0).length;return`${n} magnetic moments (${m.species.map(sp=>sp.label+(sp.formFactor.c2?`, C2 ${sp.formFactor.c2}`:"")).join("; ")})`;}
 function updateMagneticUi(){const mode=$("magMode");if(!mode)return;const r=state.rmc,mag=!!(r&&r.magnetic),neutron=(($("scatterType")&&$("scatterType").value)||"neutron")==="neutron";for(const o of mode.options)if(o.value!=="nuclear")o.disabled=!mag||!neutron;if(!mag||!neutron)mode.value="nuclear";$("magQ0").disabled=$("magPara").disabled=mode.value==="nuclear";$("magInfo").textContent=mag?magneticSummary(r):"no spins loaded";}
 function tableNumFromUi(type,model,tableRaw){
@@ -2327,7 +2344,7 @@ return cfg;
 }
 function updateSmoothUi(){const on=$("smooth3d").value==="1",type=$("smoothType").value;$("smoothType").disabled=!on;$("smoothScale").disabled=!on;$("chebDb").disabled=(!on||type!=="chebyshev");}
 
-function bind(){const drop=$("drop"),file=$("file");drop.addEventListener("click",()=>file.click());drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("drag");});drop.addEventListener("dragleave",()=>drop.classList.remove("drag"));drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("drag");onFile(e.dataTransfer.files?.[0]).catch(err=>status(`File load failed: ${err.message}`,"err"));});file.addEventListener("change",e=>onFile(e.target.files?.[0]).catch(err=>status(`File load failed: ${err.message}`,"err")));
+function bind(){const drop=$("drop"),file=$("file");drop.addEventListener("click",()=>file.click());drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("drag");});drop.addEventListener("dragleave",()=>drop.classList.remove("drag"));drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("drag");onFiles(e.dataTransfer.files).catch(err=>status(`File load failed: ${err.message}`,"err"));});file.addEventListener("change",e=>onFiles(e.target.files).catch(err=>status(`File load failed: ${err.message}`,"err")));
 $("backend").addEventListener("change",()=>{if($("backend").value!=="wgpu_type1"&&window.WgpuType1)window.WgpuType1.reset();if(($("backend").value==="webgpu_fft"||$("backend").value==="wgpu_type1")&&!navigator.gpu){$("backend").value="fft";status("WebGPU unavailable in this browser; switched backend to CPU FFT.","warn");}applyBackendDefaults($("backend").value,true);});
 if(!navigator.gpu){const be=$("backend");for(const v of ["webgpu_fft","wgpu_type1"]){const opt=be.querySelector(`option[value="${v}"]`);if(opt){opt.disabled=true;opt.textContent=opt.textContent.replace("(WebGPU)","(WebGPU unavailable)");}}if(be.value==="webgpu_fft"||be.value==="wgpu_type1")be.value="fft";}
 applyBackendDefaults($("backend").value,false);

@@ -23,10 +23,11 @@ The `docs/` directory contains the full documentation set
 
 ## Features
 
-- **Input formats**: RMCProfile `.rmc6f`, LAMMPS data files
-  (`.data` / `.lmp` / `.lammps`), unified structure HDF5
-  (`.h5` / `.hdf5`), and Scatty spin or atom files (`.txt`), loaded via
-  drag-and-drop or file picker.
+- **Input formats**: RMCProfile `.rmc6f` (with the spin `.cfg` and `.dat`
+  of magnetic RMC), LAMMPS data files (`.data` / `.lmp` / `.lammps`,
+  including `atom_style spin`), unified structure HDF5 (`.h5` / `.hdf5`),
+  and Scatty spin or atom files (`.txt`), loaded via drag-and-drop or the
+  file picker (several files at once).
 - **Compute backends**: the default, `wgpuNUFFT type-1 (WebGPU)`, evaluates
   the uniform `h,k,l` grid as a type-1 NUFFT on the GPU (bundled
   [wgpu-web](https://github.com/MaximEremenko/wgpuNUFFT)), with all phases
@@ -37,10 +38,12 @@ The `docs/` directory contains the full documentation set
   the app falls back to the CPU FFT backend automatically; large grids on
   the WebGPU paths run in chunks.
 - **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
-  intensity from spin configurations. It uses the perpendicular projection
-  |M⊥|², Brown ⟨j0⟩/⟨j2⟩ form factors for 155 ions, and optional
-  ideal-paramagnet subtraction. It is validated against J. A. M. Paddison's
-  Scatty on MnO and spin ice.
+  intensity from Scatty spin files, RMCProfile magnetic configurations
+  (moments and form factors from the `.dat` MAGNETISM block) and LAMMPS
+  spins. It uses the perpendicular projection |M⊥|², Brown ⟨j0⟩/⟨j2⟩ form
+  factors for 155 ions, and optional ideal-paramagnet subtraction. A species
+  table sets the form factor, C2 and moment of each magnetic species. It is
+  validated against J. A. M. Paddison's Scatty on MnO and spin ice.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray
   (Waasmaier table), and electron scattering (neutral-atom tables:
   Lobato, Peng, Doyle, Weickenmeier, Kirkland; ionic Peng model with

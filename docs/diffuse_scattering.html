@@ -49,12 +49,12 @@
       <h2>Quick Start</h2>
       <ol>
         <li>Open the tool.</li>
-        <li>Load an <code>.rmc6f</code> file, a unified structure <code>.h5</code> file, or a Scatty spin or atom file (<code>.txt</code>).</li>
+        <li>Load an <code>.rmc6f</code> file, a unified structure <code>.h5</code> file, a LAMMPS data file, or a Scatty spin or atom file (<code>.txt</code>). For magnetic RMCProfile results, select the <code>.rmc6f</code>, the spin <code>.cfg</code> and the <code>.dat</code> together.</li>
         <li>Choose a backend: WebGPU first, CPU FFT if WebGPU is unavailable.</li>
         <li>Set the reciprocal-space grid and press <strong>Compute Diffuse</strong>.</li>
         <li>Inspect the <strong>3D Slice Plane</strong>, <strong>2D Slice Map</strong>, and <strong>3D Isosurface</strong>.</li>
       </ol>
-      <pre><code>Input:  .rmc6f, unified structure .h5, Scatty spins/atoms .txt, LAMMPS data
+      <pre><code>Input:  .rmc6f (+ RMCProfile spin .cfg and .dat), unified structure .h5, Scatty spins/atoms .txt, LAMMPS data
 Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.html)</code></pre>
       <figure>
         <img src="assets/diffuse_scattering_ui_annotated.png" alt="Diffuse scattering calculator interface after loading LiFeO2 and computing diffuse intensity" style="width:100%;border:1px solid #cbd5e1;border-radius:12px;">
@@ -108,12 +108,36 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <table>
     <tr><th>Control</th><th>Purpose</th></tr>
     <tr><td>Subtract avg</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions. Needs per-atom unit-cell references; it is switched off for LAMMPS data and for unified files without <code>atom_unit_cell</code>.</td></tr>
-    <tr><td>Magnetic</td><td>For spin configurations (Scatty spin files) with neutron radiation: nuclear only, magnetic only, or nuclear + magnetic scattering. Magnetic Q=0 and Paramagnet set the Q = 0 convention and the optional ideal-paramagnet subtraction; see <a href="diffuse_scattering_theory.html">Theory</a>.</td></tr>
+    <tr><td>Magnetic</td><td>For spin configurations (see <a href="#magnetic-input">Magnetic Input</a>) with neutron radiation: nuclear only, magnetic only, or nuclear + magnetic scattering. Magnetic Q=0 and Paramagnet set the Q = 0 convention and the optional ideal-paramagnet subtraction; see <a href="diffuse_scattering_theory.html">Theory</a>.</td></tr>
     <tr><td>Normalize</td><td>Divide the intensity by the number of atoms (default; barn/sr per atom for neutrons), by the number of grid points (legacy), or not at all.</td></tr>
     <tr><td>Viewer scale</td><td>Choose <code>log10</code> or <code>linear</code> display scaling for the diffuse intensity.</td></tr>
     <tr><td>Base name</td><td>Controls the base filename used by the export actions.</td></tr>
   </table>
   <p>See <a href="diffuse_scattering_theory.html">Theory</a> for the equations behind these controls.</p>
+</section>
+<section id="magnetic-input">
+  <h2>Magnetic Input</h2>
+  <p>Magnetic scattering needs a moment on each magnetic atom. Three sources are read:</p>
+  <table>
+    <tr><th>Source</th><th>Files</th><th>Moments and form factors</th></tr>
+    <tr><td>RMCProfile (magnetic RMC)</td><td><code>.rmc6f</code>, spin <code>.cfg</code> (legacy or version 2), and the <code>.dat</code> control file</td><td>Unit spin vectors times <code>MAGNETIC_MOMENTS</code> (&mu;<sub>B</sub>) of the MAGNETISM block. <code>FORM_FACTOR</code> records give &lang;j<sub>0</sub>&rang;.</td></tr>
+    <tr><td>Scatty</td><td><code>[stem]_spins_NN.txt</code></td><td>SPIN components along a, b, c in &mu;<sub>B</sub>. Form factors and C<sub>2</sub> come from the file.</td></tr>
+    <tr><td>LAMMPS</td><td>Data file with <code>atom_style spin</code></td><td>Unit vector times <code>sp</code> (&mu;<sub>B</sub>). Form factors are those of the element's usual ion.</td></tr>
+  </table>
+  <p>Select the RMCProfile files together, or load the <code>.rmc6f</code> first. The spin file attaches to the loaded structure, and the <code>.dat</code> can come before or after it.</p>
+  <ul>
+    <li>Spin <em>j</em> of magnetic species <em>t</em> is the <em>j</em>-th atom of atom type <em>t</em>. The type order is that of the <code>.dat</code> <code>ATOMS</code> line, or else the rmc6f "Atom types present". Version-2 files name the atom of each spin.</li>
+    <li>When the <code>.rmc6f</code> has <code>Lattice vectors</code>, spins are rotated from that frame into the calculator's frame (c along z).</li>
+    <li>A loaded MAGNETISM block stays active for later spin files until a structure with other atom types is loaded.</li>
+  </ul>
+  <p>After loading, a species table under the Magnetic row lists each magnetic species. Changes apply at the next <strong>Compute Diffuse</strong>.</p>
+  <table>
+    <tr><th>Column</th><th>Meaning</th></tr>
+    <tr><td>Form factor</td><td>The coefficients from the file, or an ion from the table of 155 ions. Without a <code>.dat</code>, RMCProfile and LAMMPS species start with the element's usual ion: 3+ for rare earths and actinides, 2+ otherwise.</td></tr>
+    <tr><td>C2</td><td>The weight of &lang;j<sub>2</sub>&rang;. Its tooltip gives (2 &minus; g<sub>J</sub>)/g<sub>J</sub> for 4f and 5f ions. It is disabled when the form factor has no &lang;j<sub>2</sub>&rang; part.</td></tr>
+    <tr><td>&mu; (&mu;<sub>B</sub>) or Scale</td><td>The moment per spin for RMCProfile spins, or a factor on the file's moments for the other sources.</td></tr>
+  </table>
+  <p>A tabulated <code>MAGNETIC_FORM_FACTOR_FILE</code> is not read. Choose the ion in the species table instead.</p>
 </section>
 <section>
   <h2>Element Filter</h2>
