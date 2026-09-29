@@ -118,6 +118,19 @@
   <p>For broad diffuse problems, <code>log10</code> is usually the more informative visualization setting.</p>
 </section>
 
+<section id="comparison">
+  <h2>Comparison With Data</h2>
+  <p>A calculation I<sub>c</sub> is compared with measured or reference intensities I on the grid points the two share. The model</p>
+  <p>I<sub>m</sub> = s I<sub>c</sub> + b + c |<strong>Q</strong>|</p>
+  <p>is fitted by weighted linear least squares, with w = 1/&sigma;<sup>2</sup> from the data, or w = 1 when they give none. Each of s, b and c is either refined or held at s = 1, b = c = 0. This is the single-crystal fit of Spinteract (Paddison, 2022; see the <a href="diffuse_scattering_bibliography.html">bibliography</a>). Points are left out when the data are masked, &sigma; is not positive, the calculation is not finite, or Q = 0. With n points and p refined parameters:</p>
+  <ul>
+    <li>&chi;<sup>2</sup> = &Sigma; w (I &minus; I<sub>m</sub>)<sup>2</sup>, and &chi;<sup>2</sup>/(n &minus; p) per degree of freedom;</li>
+    <li>R<sub>wp</sub> = 100 &radic;(&chi;<sup>2</sup> / &Sigma; w I<sup>2</sup>), Spinteract's weighted profile R-factor;</li>
+    <li>R = 100 &Sigma;|I &minus; I<sub>m</sub>| / &Sigma;|I|.</li>
+  </ul>
+  <p>The normal equations are solved on the equilibrated 3&times;3 system. A calculation that does not vary over the data points cannot separate s from b, and is reported instead of fitted. The fit only rescales and offsets: it cannot remove a difference in shape, which is what the difference map shows.</p>
+</section>
+
 <section>
   <h2>Reciprocal-Space Conventions</h2>
   <ul>

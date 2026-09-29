@@ -1,9 +1,11 @@
 "use strict";
 
 // Reads reciprocal-space intensity lists, one point per line:
-//   h k l I [sigma or weight ...]
-// as written by Scatty ([title]_[name]_sc_list.txt) and used for Spinteract's
-// single-crystal data. The points are placed on the regular h, k, l grid they
+//   h k l I [sigma]
+// as written by Scatty ([title]_[name]_sc_list.txt, sigma = 1) and used for
+// Spinteract's single-crystal data (h k l intensity error). A fifth number is
+// the uncertainty sigma when every line has one; lines with more numbers are
+// read as h k l I. The points are placed on the regular h, k, l grid they
 // span; grid points without a line (masked data) are NaN.
 // Also reads the cell of a Spinteract configuration (CELL a b c alpha beta
 // gamma) and recognises Scatty's settings files, which hold no structure.
@@ -67,9 +69,11 @@
     let K = new Int32Array(capacity);
     let L = new Int32Array(capacity);
     let V = new Float64Array(capacity);
+    let E = new Float32Array(capacity);
     let carry = "";
     let skipped = 0;
-    const cols = new Float64Array(4);
+    let sigmaRows = 0;
+    const cols = new Float64Array(6);
 
     function grow() {
       capacity *= 2;
@@ -77,6 +81,7 @@
       const k = new Int32Array(capacity); k.set(K); K = k;
       const l = new Int32Array(capacity); l.set(L); L = l;
       const v = new Float64Array(capacity); v.set(V); V = v;
+      const e = new Float32Array(capacity); e.set(E); E = e;
     }
 
     // Decimal number in s[i, j): sign, digits, point, exponent (E or Fortran D).
@@ -124,11 +129,12 @@
       return negative ? -v : v;
     }
 
-    // The first four numbers of a line (h k l I); later ones are ignored.
+    // h k l I from the first four numbers of a line, and sigma from a fifth
+    // when the line has exactly five.
     function line(s, a, b) {
       let n = 0;
       let i = a;
-      while (i < b && n < 4) {
+      while (i < b && n < 6) {
         while (i < b && s.charCodeAt(i) <= 32) i++;
         if (i >= b) break;
         let j = i;
@@ -149,6 +155,8 @@
       K[count] = Math.round(cols[1] * QUANT);
       L[count] = Math.round(cols[2] * QUANT);
       V[count] = cols[3];
+      E[count] = n === 5 ? cols[4] : NaN;
+      if (n === 5) sigmaRows++;
       count++;
     }
 
@@ -167,7 +175,7 @@
     function finish() {
       if (carry) line(carry, 0, carry.length);
       carry = "";
-      return { count, skipped, h: H.subarray(0, count), k: K.subarray(0, count), l: L.subarray(0, count), value: V.subarray(0, count) };
+      return { count, skipped, h: H.subarray(0, count), k: K.subarray(0, count), l: L.subarray(0, count), value: V.subarray(0, count), sigma: E.subarray(0, count), sigmaRows };
     }
 
     return { push, finish, count: () => count };
@@ -194,7 +202,10 @@
     return { values: Array.from({ length: n }, (_, i) => round9((unique[0] + i * exact) / QUANT)), min: unique[0], step: exact };
   }
 
-  // Places parsed points on their h, k, l grid (l fastest). Duplicate points are averaged.
+  // Places parsed points on their h, k, l grid (l fastest). Duplicate points
+  // are averaged, with sigma sqrt(sum sigma^2) / n. When every line gives a
+  // sigma, `sigma` is its grid (NaN where masked or where sigma <= 0), or
+  // null with `sigmaConstant` set when all lines give the same positive one.
   function buildGrid(rows) {
     if (!rows || rows.count < 1) throw new Error("Intensity list: no data lines found");
     const ah = regularAxis(rows.h, "h");
@@ -205,7 +216,9 @@
     if (total > MAX_GRID_POINTS) throw new Error(`Intensity list: the grid ${shape.join(" x ")} has more than ${MAX_GRID_POINTS / 1e6} million points`);
     const I = new Float64Array(total).fill(NaN);
     const hits = new Uint16Array(total);
-    let duplicates = 0;
+    const hasSigma = rows.sigma && rows.sigmaRows > 0 && rows.sigmaRows === rows.count;
+    const S2 = hasSigma ? new Float64Array(total) : null;
+    let duplicates = 0, sigmaInvalid = 0, sigmaMin = Infinity, sigmaMax = -Infinity;
     for (let p = 0; p < rows.count; p++) {
       const i = Math.round((rows.h[p] - ah.min) / ah.step);
       const j = Math.round((rows.k[p] - ak.min) / ak.step);
@@ -215,6 +228,17 @@
       if (hits[at] === 0) I[at] = v;
       else { duplicates++; I[at] += (v - I[at]) / (hits[at] + 1); }
       if (hits[at] < 65535) hits[at]++;
+      if (S2) {
+        const e = rows.sigma[p];
+        if (e > 0 && e < Infinity) {
+          S2[at] += e * e;
+          if (e < sigmaMin) sigmaMin = e;
+          if (e > sigmaMax) sigmaMax = e;
+        } else {
+          S2[at] = NaN;
+          sigmaInvalid++;
+        }
+      }
     }
     let min = Infinity, max = -Infinity, filled = 0;
     for (let i = 0; i < total; i++) {
@@ -225,7 +249,14 @@
       if (v > max) max = v;
     }
     if (!filled) throw new Error("Intensity list: no finite intensities");
-    return { h: ah.values, k: ak.values, l: al.values, shape, I, min, max, points: rows.count, filled, masked: total - filled, duplicates };
+    let sigma = null, sigmaConstant = null;
+    if (S2 && !sigmaInvalid && sigmaMin === sigmaMax) {
+      sigmaConstant = sigmaMin;
+    } else if (S2) {
+      for (let i = 0; i < total; i++) S2[i] = hits[i] && Number.isFinite(I[i]) ? Math.sqrt(S2[i]) / hits[i] : NaN;
+      sigma = S2;
+    }
+    return { h: ah.values, k: ak.values, l: al.values, shape, I, min, max, points: rows.count, filled, masked: total - filled, duplicates, sigma, sigmaConstant, sigmaInvalid };
   }
 
   function parseText(text) {
