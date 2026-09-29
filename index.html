@@ -1486,13 +1486,11 @@ return window.h5wasm;
 }
 
 function parseUnifiedRMC(name,model){
-needDiffuseCore();
-const supercell=model.unitCells.slice(0,3),parent=model.cellLengths.slice(0,3),angles=model.cellAngles.slice(0,3),anglesRad=angles.map(v=>v*Math.PI/180),parentDirect=cell2vec(parent[0],parent[1],parent[2],anglesRad[0],anglesRad[1],anglesRad[2]),sp=vec2space(transpose3(parentDirect)),fullDirect=scaleCols(sp.B,supercell),Bq=scaleMat(sp.Bp,PI2),n=model.atomCount,x=new Float64Array(n),y=new Float64Array(n),z=new Float64Array(n),xa=new Float64Array(n),ya=new Float64Array(n),za=new Float64Array(n),dx=new Float64Array(n),dy=new Float64Array(n),dz=new Float64Array(n);
-for(let i=0;i<n;i++){
-const p=model.atomPosition[i],uc=model.atomUnitCell[i],actualWhole=model.coordinatesAreSupercellFractional?[p[0],p[1],p[2]]:[p[0]/supercell[0],p[1]/supercell[1],p[2]/supercell[2]],idealWhole=[(Math.round(uc[0])-1)/supercell[0],(Math.round(uc[1])-1)/supercell[1],(Math.round(uc[2])-1)/supercell[2]],delta=[wrapDelta(actualWhole[0]-idealWhole[0]),wrapDelta(actualWhole[1]-idealWhole[1]),wrapDelta(actualWhole[2]-idealWhole[2])],pA=mul(idealWhole,fullDirect),pD=mul(delta,fullDirect);
-xa[i]=pA[0];ya[i]=pA[1];za[i]=pA[2];dx[i]=pD[0];dy[i]=pD[1];dz[i]=pD[2];x[i]=pA[0]+pD[0];y[i]=pA[1]+pD[1];z[i]=pA[2]+pD[2];
-}
-const parsed={file:String(name||""),atoms:n,super:supercell,cellDeg:[parent[0]*supercell[0],parent[1]*supercell[1],parent[2]*supercell[2],angles[0],angles[1],angles[2]],Bp:sp.Bp,Bq,x,y,z,xa,ya,za,dx,dy,dz,elements:model.elements.slice(),sourceFormat:"unified structure HDF5",legacyContract:model.legacyContract};
+needDiffuseCore();needRmcReader();
+const supercell=model.unitCells.slice(0,3),parent=model.cellLengths.slice(0,3),angles=model.cellAngles.slice(0,3),n=model.atomCount,fractional=new Float64Array(n*3),cellIndex=model.atomUnitCellPresent===false?null:new Int32Array(n*3);
+for(let i=0;i<n;i++){const p=model.atomPosition[i],uc=model.atomUnitCell[i];for(let d=0;d<3;d++){fractional[i*3+d]=model.coordinatesAreSupercellFractional?p[d]:p[d]/supercell[d];if(cellIndex)cellIndex[i*3+d]=Math.round(uc[d])-1;}}
+const structure=window.RMC6fReader.buildSupercellStructure({parentCellDeg:[parent[0],parent[1],parent[2],angles[0],angles[1],angles[2]],supercell,fractional,cellIndex,elements:model.elements});
+const parsed={file:String(name||""),...structure,cellDeg:[parent[0]*supercell[0],parent[1]*supercell[1],parent[2]*supercell[2],angles[0],angles[1],angles[2]],sourceFormat:"unified structure HDF5",legacyContract:model.legacyContract};
 return window.DiffuseCore.attachNeutronCoefficients(parsed,10);
 }
 

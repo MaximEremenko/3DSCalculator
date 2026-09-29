@@ -126,22 +126,6 @@
     }
   }
 
-  function cross(a, b) {
-    return [
-      a[1] * b[2] - a[2] * b[1],
-      a[2] * b[0] - a[0] * b[2],
-      a[0] * b[1] - a[1] * b[0],
-    ];
-  }
-
-  function dot(a, b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  }
-
-  function col3(m, j) {
-    return [m[0][j], m[1][j], m[2][j]];
-  }
-
   function inv3(m) {
     const a = m[0][0];
     const b = m[0][1];
@@ -181,11 +165,11 @@
     ];
   }
 
-  function scaleCols(m, s) {
+  function transpose(m) {
     return [
-      [m[0][0] * s[0], m[0][1] * s[1], m[0][2] * s[2]],
-      [m[1][0] * s[0], m[1][1] * s[1], m[1][2] * s[2]],
-      [m[2][0] * s[0], m[2][1] * s[1], m[2][2] * s[2]],
+      [m[0][0], m[1][0], m[2][0]],
+      [m[0][1], m[1][1], m[2][1]],
+      [m[0][2], m[1][2], m[2][2]],
     ];
   }
 
@@ -197,6 +181,8 @@
     ];
   }
 
+  // Lattice vectors as the ROWS of the returned matrix (c along z, b in the
+  // yz plane); angles in radians.
   function cell2vec(a, b, c, al, be, ga) {
     const v = [
       [0, 0, 0],
@@ -218,40 +204,40 @@
     ];
   }
 
-  function vec2space(v) {
-    const av = col3(v, 0);
-    const bv = col3(v, 1);
-    const cv = col3(v, 2);
-    const den = dot(av, cross(bv, cv));
-    if (!Number.isFinite(den) || Math.abs(den) < 1e-20) {
-      throw new Error("Invalid reciprocal basis");
-    }
-    const ap = cross(bv, cv).map((x) => x / den);
-    const bp = cross(cv, av).map((x) => x / den);
-    const cp = cross(av, bv).map((x) => x / den);
-    const Bp = [ap, bp, cp];
-    return { B: inv3(Bp), Bp };
-  }
-
   function wrapDelta(x) {
     if (x < -0.5) return x + 1;
     if (x > 0.5) return x - 1;
     return x;
   }
 
-  function parseRmc6f(name, text) {
-    const r = new RMC6fParser();
-    r.parse(text);
-    if (!r.rows.length) throw new Error("No atom rows found");
-    if (!r.cellRad.every(Number.isFinite)) throw new Error("Cell parameters missing");
+  // Cartesian geometry of the parent cell (lengths in Angstrom, angles in
+  // degrees). Rows of `direct` are the lattice vectors and rows of `Bp` the
+  // reciprocal vectors (a*.a = 1), so r = u * direct and q = [h,k,l] * Bq
+  // give q.r = 2*pi*h.u for u in parent-cell units, for any cell angles.
+  function cellGeometry(cellDeg) {
+    const rad = (deg) => (Number(deg) * Math.PI) / 180;
+    const direct = cell2vec(
+      Number(cellDeg[0]),
+      Number(cellDeg[1]),
+      Number(cellDeg[2]),
+      rad(cellDeg[3]),
+      rad(cellDeg[4]),
+      rad(cellDeg[5])
+    );
+    const Bp = transpose(inv3(direct));
+    return { direct, Bp, Bq: scaleMat(Bp, PI2) };
+  }
 
-    const [sx, sy, sz] = r.super;
-    const [a, b, c, al, be, ga] = r.cellRad;
-    const vpc = cell2vec(a / sx, b / sy, c / sz, al, be, ga);
-    const sp = vec2space(vpc);
-    const Bscaled = scaleCols(sp.B, [sx, sy, sz]);
-    const Bq = scaleMat(sp.Bp, PI2);
-    const n = r.rows.length;
+  // Builds the parsed structure from supercell-fractional positions (3 per
+  // atom) and the 0-based cell each atom belongs to (null when the source
+  // has no cell references). Ideal positions are the cell origins and the
+  // displacements are wrapped to the nearest periodic image.
+  function buildSupercellStructure(spec) {
+    const supercell = spec.supercell.map((v) => Math.max(1, Math.round(Number(v) || 1)));
+    const geometry = cellGeometry(spec.parentCellDeg);
+    const frac = spec.fractional;
+    const cells = spec.cellIndex || null;
+    const n = spec.elements.length;
     const x = new Float64Array(n);
     const y = new Float64Array(n);
     const z = new Float64Array(n);
@@ -261,19 +247,17 @@
     const dx = new Float64Array(n);
     const dy = new Float64Array(n);
     const dz = new Float64Array(n);
-    const elements = new Array(n);
+    const ideal = [0, 0, 0];
+    const delta = [0, 0, 0];
 
     for (let i = 0; i < n; i++) {
-      const row = r.rows[i];
-      const fx = Number(row.cellRefNumX) / sx;
-      const fy = Number(row.cellRefNumY) / sy;
-      const fz = Number(row.cellRefNumZ) / sz;
-      const d0 = wrapDelta(Number(row.x) - fx);
-      const d1 = wrapDelta(Number(row.y) - fy);
-      const d2 = wrapDelta(Number(row.z) - fz);
-      const pA = mul([fx, fy, fz], Bscaled);
-      const pD = mul([d0, d1, d2], Bscaled);
-
+      for (let d = 0; d < 3; d++) {
+        const cell = cells ? cells[i * 3 + d] : 0;
+        ideal[d] = cell;
+        delta[d] = wrapDelta(Number(frac[i * 3 + d]) - cell / supercell[d]) * supercell[d];
+      }
+      const pA = mul(ideal, geometry.direct);
+      const pD = mul(delta, geometry.direct);
       xa[i] = pA[0];
       ya[i] = pA[1];
       za[i] = pA[2];
@@ -283,16 +267,13 @@
       x[i] = pA[0] + pD[0];
       y[i] = pA[1] + pD[1];
       z[i] = pA[2] + pD[2];
-      elements[i] = String(row.element || "").trim();
     }
 
     return {
-      file: String(name || ""),
       atoms: n,
-      super: [sx, sy, sz],
-      cellDeg: r.cellDeg.slice(0, 6),
-      Bp: sp.Bp,
-      Bq,
+      super: supercell,
+      Bp: geometry.Bp,
+      Bq: geometry.Bq,
       x,
       y,
       z,
@@ -302,12 +283,51 @@
       dx,
       dy,
       dz,
-      elements,
+      cellIndex: cells,
+      elements: Array.from(spec.elements, (e) => String(e || "").trim()),
+    };
+  }
+
+  function parseRmc6f(name, text) {
+    const r = new RMC6fParser();
+    r.parse(text);
+    if (!r.rows.length) throw new Error("No atom rows found");
+    if (!r.cellRad.every(Number.isFinite)) throw new Error("Cell parameters missing");
+
+    const [sx, sy, sz] = r.super;
+    const [a, b, c, al, be, ga] = r.cellDeg;
+    const n = r.rows.length;
+    const fractional = new Float64Array(n * 3);
+    const cellIndex = new Int32Array(n * 3);
+    const elements = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const row = r.rows[i];
+      fractional[i * 3] = Number(row.x);
+      fractional[i * 3 + 1] = Number(row.y);
+      fractional[i * 3 + 2] = Number(row.z);
+      cellIndex[i * 3] = Math.round(Number(row.cellRefNumX));
+      cellIndex[i * 3 + 1] = Math.round(Number(row.cellRefNumY));
+      cellIndex[i * 3 + 2] = Math.round(Number(row.cellRefNumZ));
+      elements[i] = row.element;
+    }
+
+    return {
+      file: String(name || ""),
+      ...buildSupercellStructure({
+        parentCellDeg: [a / sx, b / sy, c / sz, al, be, ga],
+        supercell: [sx, sy, sz],
+        fractional,
+        cellIndex,
+        elements,
+      }),
+      cellDeg: r.cellDeg.slice(0, 6),
     };
   }
 
   global.RMC6fReader = Object.freeze({
     parse: parseRmc6f,
     Parser: RMC6fParser,
+    cellGeometry,
+    buildSupercellStructure,
   });
 })(typeof window !== "undefined" ? window : globalThis);
