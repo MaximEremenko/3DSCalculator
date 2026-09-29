@@ -71,6 +71,7 @@
     <li><strong>X-ray:</strong> Waasmaier, Lobato, Peng 0.4, Doyle, Weickenmeier, Kirkland.</li>
     <li><strong>Electron:</strong> Lobato, Peng 0.4, Doyle, Weickenmeier, Kirkland, plus ion-mode Peng support.</li>
   </ul>
+  <p>The parameterizations use different variables: Lobato and Kirkland fit in q = 1/d = 2 sin&theta;/&lambda;, the others in s = sin&theta;/&lambda;. Weickenmeier &amp; Kohl store B<sub>1</sub>&hellip;B<sub>6</sub> and V, with amplitudes A<sub>1&ndash;3</sub> = Z/(3(1+V)) and A<sub>4&ndash;6</sub> = VZ/(3(1+V)); they cover Z = 2&ndash;98, so hydrogen needs another table. X-ray factors derived from electron fits use the Mott&ndash;Bethe relation f<sub>x</sub> = Z &minus; 8&pi;&sup2;a<sub>0</sub>s&sup2;f<sub>e</sub>(s). Every X-ray table gives f(0) = Z and agrees with Waasmaier&ndash;Kirfel within its fit accuracy. Every electron table agrees with the Mott&ndash;Bethe transform of Waasmaier&ndash;Kirfel to 3% (6% for Doyle&ndash;Turner and Weickenmeier&ndash;Kohl) for |Q| &le; 12 &Aring;<sup>&minus;1</sup> (<code>tests/scattering_tables.test.js</code>).</p>
   <p>The coefficient database records its generated source paths as <code>helper_info/xray_scattering_factor_constants.f90</code> and <code>helper_info/scattering_coefficients.f90</code>.</p>
   <p>When publishing, retain the exact family name shown in the UI in figure captions and methods text. Formal references for each family are collected in <a href="diffuse_scattering_bibliography.html">Bibliography</a>.</p>
 </section>

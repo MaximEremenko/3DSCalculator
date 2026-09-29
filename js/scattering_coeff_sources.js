@@ -35,6 +35,25 @@
     return { g, gsq };
   }
 
+  // Kirkland and Lobato parameterize in q = 1/d = 2 sin(theta)/lambda, the
+  // other tables in s = sin(theta)/lambda; qTemp is |Q| = 4 pi s.
+  function qSqFromQ(qTemp) {
+    const q = Number(qTemp) / (2 * Math.PI);
+    return q * q;
+  }
+
+  // Weickenmeier & Kohl (1991) store B1..B6 and V per element (Z = 2-98);
+  // the amplitudes follow from Z: A1..A3 = Z/(3(1+V)), A4..A6 = V Z/(3(1+V)),
+  // so that sum A = Z. The table keeps V in each of the six "a" slots.
+  function weickenmeierTerms(z, rec) {
+    const b = rec.b || [];
+    const v = Number((rec.a || [])[0]);
+    if (!(v > 0) || !b.some((x) => Number(x) > 0)) {
+      throw new Error(`Weickenmeier-Kohl has no parameters for Z=${z}; choose another table.`);
+    }
+    return b.slice(0, 6).map((bi, i) => ({ A: ((i < 3 ? 1 : v) * z) / (3 * (1 + v)), B: Number(bi) }));
+  }
+
   function sumExpTerms(a, b, gsq, nTerms) {
     const n = Math.max(
       0,
@@ -148,17 +167,18 @@
   }
 
   function evalElectronNeutral(symOrZ, qTemp, tableNum) {
-    const { rec, table } = getNeutralTableRec(symOrZ, tableNum);
+    const { z, rec, table } = getNeutralTableRec(symOrZ, tableNum);
     const { gsq } = gAndG2FromQ(qTemp);
     const a = rec.a || [];
     const b = rec.b || [];
     let f = 0;
     if (table === "lobato") {
+      const qsq = qSqFromQ(qTemp);
       for (let i = 0; i < 5; i++) {
         const ai = Number(a[i] || 0);
         const bi = Number(b[i] || 0);
-        const d = 1 + bi * gsq;
-        f += ai * (2 + bi * gsq) / (d * d);
+        const d = 1 + bi * qsq;
+        f += ai * (2 + bi * qsq) / (d * d);
       }
       return f;
     }
@@ -181,29 +201,24 @@
       });
     }
     if (table === "weickenmeier") {
-      if (gsq !== 0) {
-        for (let i = 0; i < 6; i++) {
-          const ai = Number(a[i] || 0);
-          const bi = Number(b[i] || 0);
-          f += ai * (1 - Math.exp(-bi * gsq)) / gsq;
-        }
-      } else {
-        for (let i = 0; i < 6; i++) {
-          f += Number(a[i] || 0) * Number(b[i] || 0);
-        }
+      // Mott-Bethe of the X-ray form: f_e = sum A (1 - exp(-B s^2)) / (8 pi^2 a0 s^2)
+      const eightPi2a0 = 4 * Number(needDb().constants.sqPi2a0);
+      for (const t of weickenmeierTerms(z, rec)) {
+        f += gsq > 0 ? (t.A * (1 - Math.exp(-t.B * gsq))) / gsq : t.A * t.B;
       }
-      return f;
+      return f / eightPi2a0;
     }
     if (table === "kirkland") {
+      const qsq = qSqFromQ(qTemp);
       for (let i = 0; i < 3; i++) {
         const ai = Number(a[i] || 0);
         const bi = Number(b[i] || 0);
         const ci = Number(a[3 + i] || 0);
         const di = Number(b[3 + i] || 0);
-        if (bi + gsq !== 0) {
-          f += ai / (bi + gsq) + ci * Math.exp(-di * gsq);
+        if (bi + qsq !== 0) {
+          f += ai / (bi + qsq) + ci * Math.exp(-di * qsq);
         } else {
-          f += ci * Math.exp(-di * gsq);
+          f += ci * Math.exp(-di * qsq);
         }
       }
       return f;
@@ -229,52 +244,50 @@
       });
     }
     if (table === "lobato") {
+      const qsq = qSqFromQ(qTemp);
       for (let i = 0; i < 5; i++) {
         const ai = Number(a[i] || 0);
         const bi = Number(b[i] || 0);
-        if (bi !== 0) f += (sqPi2a0 * ai) / (bi * (1 + bi * gsq) ** 2);
+        if (bi !== 0) f += (sqPi2a0 * ai) / (bi * (1 + bi * qsq) ** 2);
       }
       return f;
     }
     if (table === "peng_0_4") {
+      // Mott-Bethe from the electron fit in s: f_x = Z - 8 pi^2 a0 s^2 f_e(s)
       return evalExpSeriesModel(rec, gsq, {
         terms: 5,
-        factor: sqPi2a0,
+        factor: 4 * sqPi2a0,
         usesG2: true,
         sign: -1,
         constant: z,
       });
     }
     if (table === "doyle") {
+      // Mott-Bethe from the electron fit in s: f_x = Z - 8 pi^2 a0 s^2 f_e(s)
       return evalExpSeriesModel(rec, gsq, {
         terms: 4,
-        factor: sqPi2a0,
+        factor: 4 * sqPi2a0,
         usesG2: true,
         sign: -1,
         constant: z,
       });
     }
     if (table === "weickenmeier") {
-      return evalExpSeriesModel(rec, gsq, {
-        terms: 6,
-        factor: sqPi2a0,
-        usesG2: false,
-        sign: 1,
-        constant: 0,
-      });
+      return weickenmeierTerms(z, rec).reduce((sum, t) => sum + t.A * Math.exp(-t.B * gsq), 0);
     }
     if (table === "kirkland") {
+      const qsq = qSqFromQ(qTemp);
       f = z;
       for (let i = 0; i < 3; i++) {
         const ai = Number(a[i] || 0);
         const bi = Number(b[i] || 0);
         const ci = Number(a[3 + i] || 0);
         const di = Number(b[3 + i] || 0);
-        if (bi + gsq !== 0) {
-          f -= sqPi2a0 * gsq * ai / (bi + gsq);
-          f -= sqPi2a0 * gsq * ci * Math.exp(-di * gsq);
+        if (bi + qsq !== 0) {
+          f -= sqPi2a0 * qsq * ai / (bi + qsq);
+          f -= sqPi2a0 * qsq * ci * Math.exp(-di * qsq);
         } else {
-          f -= sqPi2a0 * gsq * ci * Math.exp(-di * gsq);
+          f -= sqPi2a0 * qsq * ci * Math.exp(-di * qsq);
         }
       }
       return f;
