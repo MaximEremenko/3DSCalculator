@@ -106,8 +106,8 @@
         const shape = datasetShape(file, path);
         const out = new Array(rows);
         for (let i = 0; i < rows; i++) out[i] = new Array(columns);
-        // Current DISCUS/RMC structure files store atom arrays as (N,3).
-        // Keep accepting the former RMC disk orientation (3,N).
+        // RMCProfile 6.8 stores atom arrays as (N,3); DISCUS/H5FORTRAN store
+        // (3,N). Accept both (N == 3 is ambiguous and read as (N,3)).
         if (shape.length === 2 && shape[0] === rows && shape[1] === columns) {
             for (let i = 0; i < rows; i++)
                 for (let j = 0; j < columns; j++) out[i][j] = flat[i * columns + j];
@@ -143,9 +143,12 @@
             }
             const atomPosition = matrixRows(file, 'entry/data/atom_position', atomCount, 3, true);
             let atomUnitCell = matrixRows(file, 'entry/data/atom_unit_cell', atomCount, 3, false);
+            const atomUnitCellPresent = !!atomUnitCell;
             if (!atomUnitCell) atomUnitCell = Array.from({ length: atomCount }, () => [1, 1, 1]);
             const atomType = numericDataset(file, 'entry/data/atom_type', true).slice(0, atomCount).map(Math.round);
-            const typeNames = textDataset(file, 'entry/data/types_names').split(/\s+/).filter(Boolean);
+            // RMCProfile, DISCUS and the Python reference join names with ';';
+            // RMCProfile's reader also accepts ',', space and tab.
+            const typeNames = textDataset(file, 'entry/data/types_names').split(/[\s;,]+/).filter(Boolean);
             if (atomType.length !== atomCount || !typeNames.length) {
                 throw new Error('unified structure: invalid atom types');
             }
@@ -172,6 +175,7 @@
                 unitCells,
                 atomPosition,
                 atomUnitCell,
+                atomUnitCellPresent,
                 atomType,
                 typeNames,
                 elements,

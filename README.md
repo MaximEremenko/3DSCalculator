@@ -87,6 +87,16 @@ Three benchmark `.rmc6f` configurations ship in [`Examples/`](Examples/):
 | `CaTiO3.rmc6f` | Displacement benchmark with overlapping rod-like and breathing-related diffuse features. |
 | `PMN_300k.rmc6f` | Relaxor benchmark for anisotropic diffuse features and complex slice exploration. |
 
+## Tests
+
+The `tests/` directory holds Node tests for the shared JavaScript modules
+(unified HDF5 I/O and the diffuse amplitude core). Run them from the
+repository root with Node 22 or newer:
+
+```
+node --test
+```
+
 ## Provenance
 
 This repository was extracted (with full git history, via `git filter-repo`)
