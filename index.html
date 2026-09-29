@@ -538,6 +538,24 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <div class="k">Cell</div><div class="v" id="mCell">-</div>
           <div class="k">Elements</div><div class="v" id="mElem">-</div>
         </div>
+        <details class="subsection" id="modulationBox">
+          <summary>Modulation <span class="fine" id="modState"></span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
+          <div class="subsection-body">
+            <p class="fine">A wave with any wavevector q, commensurate or incommensurate, applied to the loaded structure. Phase 2&pi; q&middot;r + &phi; at each atom.</p>
+            <div class="grid2">
+              <label>Kind<select id="modKind"><option value="displacive">displacive wave</option><option value="sdw">spin-density wave</option><option value="helix">helix</option></select></label>
+              <label title="Element symbols, comma separated; empty for all atoms">Elements<input id="modElements" type="text" placeholder="all"></label>
+            </div>
+            <div class="vec"><span class="vec-label">q</span><label class="affix"><span>h</span><input id="modQh" type="number" value="0.2873" step="any" aria-label="q h"></label><label class="affix"><span>k</span><input id="modQk" type="number" value="0" step="any" aria-label="q k"></label><label class="affix"><span>l</span><input id="modQl" type="number" value="0" step="any" aria-label="q l"></label></div>
+            <div class="vec"><span class="vec-label" id="modDirLabel">Along</span><label class="affix"><span>u</span><input id="modDu" type="number" value="1" step="any" aria-label="direction u"></label><label class="affix"><span>v</span><input id="modDv" type="number" value="0" step="any" aria-label="direction v"></label><label class="affix"><span>w</span><input id="modDw" type="number" value="0" step="any" aria-label="direction w"></label></div>
+            <div class="grid2">
+              <label id="modAmpLabel">Amplitude (&Aring;)<input id="modAmp" type="number" value="0.1" step="any"></label>
+              <label>Phase &phi; (&deg;)<input id="modPhase" type="number" value="0" step="any"></label>
+            </div>
+            <div class="btn-row"><button id="modApply" class="btn primary" type="button">Apply</button><button id="modRemove" class="btn" type="button" disabled>Remove</button></div>
+            <div id="modInfo" class="readout"></div>
+          </div>
+        </details>
         <details class="subsection" id="elemFilterDetails">
           <summary>Element filter <span class="badge">beta</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
           <div class="subsection-body">
@@ -857,6 +875,7 @@ document.querySelectorAll("input[type=checkbox][data-bool]").forEach(function(el
 <script src="./js/scatty_reader.js"></script>
 <script src="./js/rmcprofile_magnetic.js"></script>
 <script src="./js/intensity_list_reader.js"></script>
+<script src="./js/modulation.js"></script>
 <script src="./js/type1_grid.js"></script>
 <script src="./js/wgpu_type1.js"></script>
 <script>
@@ -1784,7 +1803,7 @@ const f=1/normCount;
 for(let i=0;i<Iout.length;i++)Iout[i]*=f;
 min*=f;max*=f;
 }
-state.res={file:r.file,shape,h,k,l,Bq:r.Bq,Bp:r.Bp,I:Iout,min,max,backend,opts:{...opts,subtractAverage:sub,includedAtomCount:amp.profile&&Number.isFinite(amp.profile.includedAtomCount)?amp.profile.includedAtomCount:r.atoms,averageModel:sub?"lattice_sum_times_mean_cell":"off",centring:centringUsed,averageCellCount:avgCellCount,qPointCount:qPointCount,intensityNormalization:normMode==="atom"?"per_atom":normMode==="qpoint"?"per_q_point":"none",normalizationCount:normCount,targetChunkSize:chunkSize,targetChunks:totalChunks,scattering:scatteringCfg,magnetic:magneticCfg,scatteringEngine:amp.profile&&amp.profile.engine?amp.profile.engine:"neutron_fast",type1SpotCheck:gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,smoothing:{enabled:smoothEnabled,type:smoothType,chebDb:chebDb,scale:smoothScale,kernel:smoothMeta?smoothMeta.kernel:null,engine:smoothMeta?smoothMeta.engine:null}},timings};
+state.res={file:r.file,shape,h,k,l,Bq:r.Bq,Bp:r.Bp,I:Iout,min,max,backend,opts:{...opts,subtractAverage:sub,includedAtomCount:amp.profile&&Number.isFinite(amp.profile.includedAtomCount)?amp.profile.includedAtomCount:r.atoms,averageModel:sub?"lattice_sum_times_mean_cell":"off",centring:centringUsed,modulation:r.modulation||null,averageCellCount:avgCellCount,qPointCount:qPointCount,intensityNormalization:normMode==="atom"?"per_atom":normMode==="qpoint"?"per_q_point":"none",normalizationCount:normCount,targetChunkSize:chunkSize,targetChunks:totalChunks,scattering:scatteringCfg,magnetic:magneticCfg,scatteringEngine:amp.profile&&amp.profile.engine?amp.profile.engine:"neutron_fast",type1SpotCheck:gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,smoothing:{enabled:smoothEnabled,type:smoothType,chebDb:chebDb,scale:smoothScale,kernel:smoothMeta?smoothMeta.kernel:null,engine:smoothMeta?smoothMeta.engine:null}},timings};
 const newSig=planeSig(state.res),canRestorePlane=!!(prevPlaneState&&prevPlaneState.signature===newSig);
 state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=canRestorePlane?prevPlaneState:null;state.planeSliceCache=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;
 const dt=(performance.now()-t0)/1000,timingParts=[`prep=${fmtMs(timings.prepare)}`,`A=${fmtMs(timings.a)}`];if(sub){timingParts.push(`Aavg=${fmtMs(timings.aavg)}`);timingParts.push(`Adelta=${fmtMs(timings.adelta)}`);}timingParts.push(`final=${fmtMs(timings.finalize)}`);if(timings.smooth>0)timingParts.push(`smooth=${fmtMs(timings.smooth)}`);const gpuBreakdown=backend==="webgpu_fft"?formatWebgpuStageTotals(timings.webgpu):"",chunkMsg=totalChunks>1?` chunks=${totalChunks}`:"";const timingMsg=`Timing: ${timingParts.join(", ")}${gpuBreakdown?` | GPU ${gpuBreakdown}`:""}${chunkMsg}`;const smoothMsg=smoothMeta?` Smoothed (${smoothMeta.type}, kernel=${smoothMeta.kernel.join("x")}).`:"";const scatMsg=(amp.profile&&amp.profile.description?` ${amp.profile.description}.`:"")+(magneticCfg.mode!=="nuclear"?` Magnetic: ${magneticCfg.mode==="both"?"nuclear + magnetic":"magnetic only"}${magneticCfg.subtractParamagnet?", ideal paramagnet subtracted":""}.`:"");const centringMsg=centringUsed?`, ${centringUsed.nuclear}-centred${magneticCfg.mode!=="nuclear"&&centringUsed.magnetic!==centringUsed.nuclear?` (magnetic ${centringUsed.magnetic})`:""}${centringUsed.auto?" (auto)":""}`:"",avgNormMsg=sub?` Average: lattice sum × mean cell (N_cell=${avgCellCount}${centringMsg}).`:"";const normUnits={neutron:"barn/sr per atom",xray:"electron units per atom",electron:"Å²/sr per atom"}[scatteringCfg.type]||"per atom",normMsg=normMode==="atom"?` Normalized per atom (N=${atomCount}; ${normUnits}).`:normMode==="qpoint"?` Normalized by 1/Nq (Nq=${qPointCount}).`:" Normalization OFF.";const unknownMsg=(scatteringCfg.type==="neutron"&&magneticCfg.mode!=="magnetic"&&r.unknown.length)?` Unknown elements: ${r.unknown.join(", ")} -> fca=10.0.`:"";const t1Check=gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,t1Msg=Number.isFinite(t1Check)?` Type-1 spot check ${t1Check.toExponential(1)}.`:"";status(`Done in ${dt.toFixed(2)} s. I range [${min.toExponential(4)}, ${max.toExponential(4)}].${scatMsg}${avgNormMsg}${normMsg} ${timingMsg}${smoothMsg}${t1Msg}${unknownMsg}`,(scatteringCfg.type==="neutron"&&r.unknown.length)?"warn":"ok");
@@ -2162,7 +2181,7 @@ parsed=scatty?parseScatty(f.name,text):lammps?parseLammps(f.name,text):parseRMC(
 }
 if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
 if(state.rmcMagnetism&&state.rmcMagnetism.types&&!state.rmcMagnetism.types.every(t=>parsed.present.some(e=>e.toLowerCase()===String(t).toLowerCase())))state.rmcMagnetism=null;
-if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.res=null;state.pendingPlane=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();renderMagneticSpecies();updateCentringUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
+if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.rmcBase=null;state.res=null;state.pendingPlane=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();renderMagneticSpecies();updateCentringUi();if($("modInfo"))$("modInfo").textContent="";if(typeof updateModulationUi==="function")updateModulationUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
 const sourceWarning=parsed.sourceWarnings&&parsed.sourceWarnings.length?parsed.sourceWarnings.join(" "):"";
 if(parsed.unknown.length&&!parsed.magneticOnly)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");
 else if(sourceWarning)status("Loaded "+f.name+". "+sourceWarning,"warn");
@@ -2245,6 +2264,12 @@ status(`Loaded intensity data ${f.name}: ${grid.shape.join(" × ")} grid (${grid
 function useDataCell(name,text){const cfg=window.IntensityListReader.parseConfig(text);if(!cfg)throw new Error(`${name}: no valid CELL line.`);state.dataCell={name,cell:cfg.cell};const r=state.res,applies=!!(r&&r.backend==="data");
 if(applies){const g=window.RMC6fReader.cellGeometry(cfg.cell);r.Bq=g.Bq;r.Bp=g.Bp;r.opts.cellSource=name;resetResultView();updateSliceUI();draw();schedule3dRender(true,0);}
 status(`Cell ${cfg.cell.slice(0,3).join(" × ")} Å, ${cfg.cell.slice(3).map(v=>v+"°").join(" ")} from ${name}${cfg.title?` (${cfg.title})`:""}${applies?`, applied to ${r.file}`:"; it applies to intensity data loaded next"}. A Spinteract configuration holds no atoms: to compute, load a structure or spin file.`,"ok");}
+/* Modulations (js/modulation.js) on the loaded structure; the unmodulated one stays in state.rmcBase */
+function modulationSpec(){const kind=$("modKind").value,num=(id)=>Number($(id).value),els=$("modElements").value.split(/[\s,;]+/).filter(Boolean);return{kind,q:[num("modQh"),num("modQk"),num("modQl")],direction:[num("modDu"),num("modDv"),num("modDw")],amplitude:num("modAmp"),phaseDeg:num("modPhase"),elements:els};}
+function updateModulationUi(){const kind=$("modKind").value,magnetic=kind!=="displacive";$("modDirLabel").textContent=kind==="helix"?"Axis":magnetic?"Moment":"Along";$("modAmpLabel").firstChild.textContent=magnetic?"Moment (μB)":"Amplitude (Å)";const on=!!(state.rmc&&state.rmc.modulation);$("modRemove").disabled=!on;$("modApply").disabled=!state.rmc;$("modState").textContent=on?`· ${state.rmc.modulation.kind}`:"";}
+function describeModulation(m,r){const q=m.q.map(v=>+v.toFixed(6)).join(" "),inc=["h","k","l"].filter((_,d)=>!m.commensurate[d]&&m.q[d]!==0),box=r.super||[1,1,1];return`${m.kind==="sdw"?"spin-density wave":m.kind} q = (${q}), ${m.atoms} atoms, ${m.kind==="displacive"?`${m.amplitude} Å`:`${m.amplitude} μB`}. `+(inc.length?`Incommensurate along ${inc.join(", ")}: satellites at G ± q with the box's finite-size width (about ${inc.map(a=>(1/Math.max(1,box["hkl".indexOf(a)])).toPrecision(2)).join(", ")} r.l.u.); use a grid step finer than that.`:"Commensurate with the box.");}
+function applyModulationUi(){const base=state.rmcBase||state.rmc;if(!base)throw new Error("Load a structure first.");const spec=modulationSpec(),mod=window.Modulation.applyModulation(base,spec);state.rmcBase=base;if(window.WgpuType1)window.WgpuType1.reset();state.rmc=mod;state.res=null;resetResultView();if(spec.kind!=="displacive"&&$("magMode").value==="nuclear")$("magMode").value="both";updateMagneticUi();renderMagneticSpecies();updateCentringUi();syncResultControls();draw();const text=describeModulation(mod.modulation,mod);$("modInfo").textContent=text;updateModulationUi();status(`Applied a ${text}`,"ok");}
+function removeModulationUi(){if(!state.rmcBase)return;if(window.WgpuType1)window.WgpuType1.reset();state.rmc=state.rmcBase;state.rmcBase=null;state.res=null;resetResultView();updateMagneticUi();renderMagneticSpecies();updateCentringUi();syncResultControls();draw();$("modInfo").textContent="";updateModulationUi();status("Removed the modulation.","ok");}
 async function onFiles(list){const rank=f=>/\.cfg$/i.test(f.name)?2:/\.dat$/i.test(f.name)?1:0,files=Array.from(list||[]).sort((a,b)=>rank(a)-rank(b));for(const f of files)await onFile(f);}
 function magneticSummary(r){const m=r.magnetic,n=Array.from(m.speciesOfAtom).filter(v=>v>=0).length;return`${n} magnetic moments (${m.species.map(sp=>sp.label+(sp.formFactor.c2?`, C2 ${sp.formFactor.c2}`:"")).join("; ")})`;}
 function updateMagneticUi(){const mode=$("magMode");if(!mode)return;const r=state.rmc,mag=!!(r&&r.magnetic),neutron=(($("scatterType")&&$("scatterType").value)||"neutron")==="neutron";for(const o of mode.options)if(o.value!=="nuclear")o.disabled=!mag||!neutron;if(!mag||!neutron)mode.value="nuclear";$("magQ0").disabled=$("magPara").disabled=mode.value==="nuclear";$("magInfo").textContent=mag?magneticSummary(r):"no spins loaded";if($("magBlock"))$("magBlock").classList.toggle("has-spins",mag);}
@@ -2775,6 +2800,14 @@ bind();draw();
       if(state.res&&typeof schedule3dRender==="function")schedule3dRender(true,0);
     });
   });
+
+  /* Modulation controls */
+  if($("modKind")){
+    $("modKind").addEventListener("change",function(){var k=$("modKind").value;if(k!=="displacive"&&Number($("modAmp").value)<0.5)$("modAmp").value="2";if(k==="displacive"&&Number($("modAmp").value)>0.5)$("modAmp").value="0.1";updateModulationUi();});
+    $("modApply").addEventListener("click",function(){try{applyModulationUi();}catch(err){status("Modulation failed: "+err.message,"err");}});
+    $("modRemove").addEventListener("click",removeModulationUi);
+    updateModulationUi();
+  }
 
   /* Grid size summary */
   ["hMin","hMax","hStep","kMin","kMax","kStep","lMin","lMax","lStep"].forEach(function(id){var el=$(id);if(el)el.addEventListener("input",updateGridSummary);});

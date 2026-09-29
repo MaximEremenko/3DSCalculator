@@ -121,6 +121,18 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   </table>
   <p>The <code>log10</code>/<code>linear</code> choice is the <strong>Scale</strong> in the Slice section; the next compute keeps it. See <a href="diffuse_scattering_theory.html">Theory</a> for the equations behind these controls.</p>
 </section>
+<section id="modulation">
+  <h2>Modulated And Incommensurate Structures</h2>
+  <p>The <strong>Modulation</strong> section of the Structure card applies a wave to the loaded structure. The wavevector <strong>q</strong> is in reciprocal-lattice units of the parent cell and may be irrational. The phase at atom j is &theta;<sub>j</sub> = 2&pi; <strong>q</strong>&middot;<strong>r</strong><sub>j</sub> + &phi;, with <strong>r</strong><sub>j</sub> the unmodulated position.</p>
+  <table>
+    <tr><th>Kind</th><th>Wave</th></tr>
+    <tr><td>Displacive wave</td><td><strong>u</strong><sub>j</sub> = A <strong>e</strong> sin &theta;<sub>j</sub>, with the amplitude A in &Aring; along [u v w]. Nuclear satellites appear at <strong>G</strong> &plusmn; m<strong>q</strong> with intensities &prop; J<sub>m</sub>(<strong>Q</strong>&middot;<strong>e</strong>A)&sup2;.</td></tr>
+    <tr><td>Spin-density wave</td><td><strong>&mu;</strong><sub>j</sub> = A <strong>e</strong> cos &theta;<sub>j</sub>, with A in &mu;<sub>B</sub> along [u v w].</td></tr>
+    <tr><td>Helix</td><td><strong>&mu;</strong><sub>j</sub> = A (<strong>e</strong><sub>1</sub> cos &theta;<sub>j</sub> + <strong>e</strong><sub>2</sub> sin &theta;<sub>j</sub>), rotating in the plane perpendicular to the axis [u v w]. The axis parallel to <strong>q</strong> gives a proper screw; an axis in the plane of <strong>q</strong> gives a cycloid.</td></tr>
+  </table>
+  <p>Magnetic waves replace the moments of the chosen elements (all atoms if the field is empty); the form factors can be changed in the species table. <strong>Remove</strong> restores the original structure.</p>
+  <p>The box is computed as a finite crystal, so an incommensurate <strong>q</strong> needs no periodic approximant. Satellites sit at <strong>G</strong> &plusmn; <strong>q</strong> with the finite-size width 1/N of the box (N cells) along each incommensurate direction. Use a grid step finer than 1/N along those directions to resolve them, and the supercell step elsewhere; the status line gives the width. Average subtraction removes only the main Bragg peaks and keeps the satellites. The results match the exact satellite theory (Bessel orders for displacive waves, N&sup2;p&sup2;f&sup2;A&sup2;/2 for a proper helix, and the finite-box formula for an incommensurate spin-density wave, <code>tests/modulation.test.js</code>).</p>
+</section>
 <section id="intensity-data">
   <h2>Loading Intensity Data</h2>
   <p>Besides structures, the calculator reads reciprocal-space intensities given as lines of <code>h k l I</code>, with any further columns (errors, weights) ignored. Such data go straight into the three views and the exports, with no structure and no computation:</p>
