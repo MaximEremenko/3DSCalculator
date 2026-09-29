@@ -37,6 +37,11 @@ The `docs/` directory contains the full documentation set
   CPU f64 direct sum for small validation grids. If WebGPU is unavailable
   the app falls back to the CPU FFT backend automatically; large grids on
   the WebGPU paths run in chunks.
+- **Interface**: a Setup panel (structure, reciprocal grid, scattering,
+  computation) with a pinned Compute button (`Ctrl+Enter`), three
+  maximizable views, and a View panel for slice, color, 3D and export
+  tools; light and dark themes; example structures one click away; a
+  drawer layout for tablets and phones.
 - **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
   intensity from Scatty spin files, RMCProfile magnetic configurations
   (moments and form factors from the `.dat` MAGNETISM block) and LAMMPS
@@ -94,8 +99,8 @@ Notes:
 - The WebGPU backend requires a WebGPU-capable browser (e.g. current
   Chrome or Edge). Other browsers automatically use the CPU FFT backend.
 
-Load one of the files from `Examples/` (or your own structure), set the
-`h,k,l` grid range, and press **Compute Diffuse**.
+Press one of the example buttons (or load your own structure), check the
+`h,k,l` grid, and press **Compute diffuse** (`Ctrl+Enter`).
 
 ## Examples
 

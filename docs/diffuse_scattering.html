@@ -49,16 +49,16 @@
       <h2>Quick Start</h2>
       <ol>
         <li>Open the tool.</li>
-        <li>Load an <code>.rmc6f</code> file, a unified structure <code>.h5</code> file, a LAMMPS data file, or a Scatty spin or atom file (<code>.txt</code>). For magnetic RMCProfile results, select the <code>.rmc6f</code>, the spin <code>.cfg</code> and the <code>.dat</code> together.</li>
-        <li>Choose a backend: WebGPU first, CPU FFT if WebGPU is unavailable.</li>
-        <li>Set the reciprocal-space grid and press <strong>Compute Diffuse</strong>.</li>
-        <li>Inspect the <strong>3D Slice Plane</strong>, <strong>2D Slice Map</strong>, and <strong>3D Isosurface</strong>.</li>
+        <li>Load an <code>.rmc6f</code> file, a unified structure <code>.h5</code> file, a LAMMPS data file, or a Scatty spin or atom file (<code>.txt</code>), or press one of the example buttons. For magnetic RMCProfile results, select the <code>.rmc6f</code>, the spin <code>.cfg</code> and the <code>.dat</code> together.</li>
+        <li>Check the reciprocal grid. Its size is shown next to the card title.</li>
+        <li>Press <strong>Compute diffuse</strong> or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>. The default backend is WebGPU; without WebGPU the tool switches to CPU FFT.</li>
+        <li>Inspect the <strong>3D slice plane</strong>, <strong>3D isosurface</strong> and <strong>2D slice map</strong>, and adjust them in the <strong>View</strong> panel.</li>
       </ol>
       <pre><code>Input:  .rmc6f (+ RMCProfile spin .cfg and .dat), unified structure .h5, Scatty spins/atoms .txt, LAMMPS data
 Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.html)</code></pre>
       <figure>
-        <img src="assets/diffuse_scattering_ui_annotated.png" alt="Diffuse scattering calculator interface after loading LiFeO2 and computing diffuse intensity" style="width:100%;border:1px solid #cbd5e1;border-radius:12px;">
-        <figcaption class="small">Example live interface after computing diffuse scattering for <code>LiFeO2.rmc6f</code>. The main workflow areas are the input/setup panel on the left, the 3D Slice Plane at top center, the 2D Slice Map below it, and the 3D render/export controls on the right.</figcaption>
+        <img src="assets/diffuse_scattering_ui.webp" alt="Diffuse scattering calculator after loading LiFeO2 and computing diffuse intensity" style="width:100%;border:1px solid #cbd5e1;border-radius:12px;">
+        <figcaption class="small">The calculator after computing <code>LiFeO2.rmc6f</code>. The Setup panel on the left holds the structure, reciprocal grid, scattering and computation settings, with the Compute button and status line at its foot. The three views sit in the middle. The View panel on the right holds the slice, color, 3D view and export tools.</figcaption>
       </figure>
     </section>
 <section>
@@ -66,13 +66,16 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <div class="callout"><strong>Important:</strong> the WebGPU FFT/NUFFT stack and the CPU FFT path used by this calculator currently operate in single precision (<code>fp32</code>) and do not provide <code>fp64</code> arithmetic. Small numerical differences, rounding-sensitive behavior, or precision-related artifacts can appear, especially for large grids, high dynamic range, or cancellation-sensitive features. For important scientific checks, compare against the <code>Exact sum</code> backend on a small grid and test whether the interpretation is stable with respect to backend and grid settings.</div>
 </section>
     <section>
-      <h2>Major Views</h2>
+      <h2>Layout And Views</h2>
       <table>
-        <tr><th>View</th><th>Purpose</th></tr>
-        <tr><td>3D Slice Plane</td><td>Shows a planar cut through the diffuse volume in reciprocal space.</td></tr>
-        <tr><td>2D Slice Map</td><td>Shows the current slice in a 2D coordinate frame for easier inspection of diffuse features.</td></tr>
-        <tr><td>3D Isosurface</td><td>Shows a constant-intensity contour view of the diffuse volume.</td></tr>
+        <tr><th>Area</th><th>Contents</th></tr>
+        <tr><td>Setup (left)</td><td>Four cards in workflow order: Structure, Reciprocal grid, Scattering and Computation. <strong>Compute diffuse</strong> and the status line stay at the foot of the panel. Click the status line to read the whole message, including timings.</td></tr>
+        <tr><td>3D slice plane</td><td>A planar cut through the diffuse volume in reciprocal space.</td></tr>
+        <tr><td>3D isosurface</td><td>Constant-intensity surfaces of the diffuse volume.</td></tr>
+        <tr><td>2D slice map</td><td>The current slice in a 2D frame, with a color bar whose handles set the display levels.</td></tr>
+        <tr><td>View (right)</td><td>Slice, Color, 3D view and Export sections. Each section folds, and the browser remembers which ones are open.</td></tr>
       </table>
+      <p>The button in the corner of each view maximizes it; press it again or <kbd>Esc</kbd> to restore. On tablets and phones the Setup panel opens from the menu button (or the Setup tab), the View tools follow the views, and a floating button starts the computation.</p>
     </section>
 <section>
   <h2>How To Read The Views</h2>
@@ -104,16 +107,16 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <p>Use this mode when a single normal plane looks too sparse, noisy, or overly sensitive to exact plane placement.</p>
 </section>
 <section>
-  <h2>Advanced Calculation Controls</h2>
+  <h2>Computation Controls</h2>
   <table>
     <tr><th>Control</th><th>Purpose</th></tr>
-    <tr><td>Subtract avg</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions. Needs per-atom unit-cell references; it is switched off for LAMMPS data and for unified files without <code>atom_unit_cell</code>.</td></tr>
-    <tr><td>Magnetic</td><td>For spin configurations (see <a href="#magnetic-input">Magnetic Input</a>) with neutron radiation: nuclear only, magnetic only, or nuclear + magnetic scattering. Magnetic Q=0 and Paramagnet set the Q = 0 convention and the optional ideal-paramagnet subtraction; see <a href="diffuse_scattering_theory.html">Theory</a>.</td></tr>
+    <tr><td>Backend</td><td>The transform engine; see <a href="#backends">Backends</a>. Changing it applies that backend's tolerance, upsampling and safety-limit preset.</td></tr>
+    <tr><td>Safety limit</td><td>Grid points per chunk on the WebGPU backends, and the largest grid the CPU backends accept.</td></tr>
+    <tr><td>Subtract average</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions. Needs per-atom unit-cell references; it is switched off for LAMMPS data and for unified files without <code>atom_unit_cell</code>.</td></tr>
     <tr><td>Normalize</td><td>Divide the intensity by the number of atoms (default; barn/sr per atom for neutrons), by the number of grid points (legacy), or not at all.</td></tr>
-    <tr><td>Viewer scale</td><td>Choose <code>log10</code> or <code>linear</code> display scaling for the diffuse intensity.</td></tr>
-    <tr><td>Base name</td><td>Controls the base filename used by the export actions.</td></tr>
+    <tr><td>Magnetic (Scattering card)</td><td>For spin configurations (see <a href="#magnetic-input">Magnetic Input</a>) with neutron radiation: nuclear only, magnetic only, or nuclear + magnetic scattering. <em>Value at Q = 0</em> and the paramagnet switch set the Q = 0 convention and the optional ideal-paramagnet subtraction; see <a href="diffuse_scattering_theory.html">Theory</a>. These controls appear once spins are loaded.</td></tr>
   </table>
-  <p>See <a href="diffuse_scattering_theory.html">Theory</a> for the equations behind these controls.</p>
+  <p>The <code>log10</code>/<code>linear</code> choice is the <strong>Scale</strong> in the Slice section; the next compute keeps it. See <a href="diffuse_scattering_theory.html">Theory</a> for the equations behind these controls.</p>
 </section>
 <section id="magnetic-input">
   <h2>Magnetic Input</h2>
@@ -130,7 +133,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
     <li>When the <code>.rmc6f</code> has <code>Lattice vectors</code>, spins are rotated from that frame into the calculator's frame (c along z).</li>
     <li>A loaded MAGNETISM block stays active for later spin files until a structure with other atom types is loaded.</li>
   </ul>
-  <p>After loading, a species table under the Magnetic row lists each magnetic species. Changes apply at the next <strong>Compute Diffuse</strong>.</p>
+  <p>After loading, a species table in the Magnetic part of the Scattering card lists each magnetic species. Changes apply at the next <strong>Compute diffuse</strong>.</p>
   <table>
     <tr><th>Column</th><th>Meaning</th></tr>
     <tr><td>Form factor</td><td>The coefficients from the file, or an ion from the table of 155 ions. Without a <code>.dat</code>, RMCProfile and LAMMPS species start with the element's usual ion: 3+ for rare earths and actinides, 2+ otherwise.</td></tr>
@@ -141,20 +144,20 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
 </section>
 <section>
   <h2>Element Filter</h2>
-  <p>The <strong>Element Filter</strong> is an experimental feature that lets you include or exclude specific elements from the scattering calculation. This is useful for partial diffuse-scattering views, but it changes the meaning of normalization and average subtraction, especially when <strong>Aavg N</strong> is set to <em>N included</em>.</p>
+  <p>The <strong>Element filter</strong> in the Structure card is an experimental feature that lets you include or exclude specific elements from the scattering calculation. This is useful for partial diffuse-scattering views, but it changes the meaning of normalization and average subtraction.</p>
 </section>
 <section>
   <h2>Smoothing Controls</h2>
-  <p>The advanced <strong>Smoothing</strong> controls operate on the computed 3D intensity volume before visualization.</p>
+  <p>The <strong>3D smoothing</strong> controls, folded inside the Computation card, operate on the computed 3D intensity volume before visualization.</p>
   <ul>
-    <li><strong>Smooth 3D</strong>: enable or disable smoothing of the diffuse volume.</li>
+    <li><strong>Smooth the computed volume</strong>: enable or disable smoothing of the diffuse volume.</li>
     <li><strong>Filter</strong>: choose between <em>Lanczos</em> and <em>Chebyshev</em>.</li>
     <li><strong>Cheb dB</strong>: controls the Chebyshev attenuation parameter.</li>
     <li><strong>Scale</strong>: controls the smoothing kernel size relative to the supercell-driven baseline.</li>
   </ul>
   <p>Lanczos is a good general-purpose smoothing filter. Chebyshev is more tunable and can produce stronger suppression of ringing depending on the chosen dB value.</p>
 </section>
-    <section>
+    <section id="backends">
       <h2>Backends And Scattering Choices</h2>
       <ul>
         <li><strong>wgpuNUFFT type-1 (WebGPU)</strong>: the default and fastest path. The uniform grid is evaluated as a type-1 NUFFT on the GPU with phases prepared in <code>fp64</code>, and each run is spot-checked against exact sums (the value is shown in the status line).</li>
@@ -172,11 +175,13 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
       <p>Backend provenance, scattering-table families, and citation-oriented notes are collected in <a href="diffuse_scattering_supplementary.html">Diffuse Scattering Supplementary</a>.</p>
     </section>
 <section>
-      <h2>3D Render Controls</h2>
+      <h2>3D View Controls</h2>
       <ul>
-        <li><strong>Iso percentile</strong>: selects the intensity percentile used for the isosurface threshold. For example, 95 means the isosurface is built from the top 5% of intensity values in the sampled 3D volume.</li>
-        <li><strong>Surface count</strong>: number of isosurfaces rendered.</li>
-        <li><strong>3D voxel cap</strong>: downsampling limit used before isosurface rendering to keep the 3D view tractable.</li>
+        <li><strong>Iso %</strong>: selects the intensity percentile used for the isosurface threshold. For example, 95 means the isosurface is built from the top 5% of intensity values in the sampled 3D volume.</li>
+        <li><strong>Surfaces</strong>: number of isosurfaces rendered.</li>
+        <li><strong>Voxel cap</strong>: downsampling limit used before isosurface rendering to keep the 3D view tractable.</li>
+        <li><strong>Isosurface</strong>, <strong>Slice plane</strong>, <strong>2D map</strong>: show or hide each view's content. With the 2D map off, the 3D views take the full height.</li>
+        <li><strong>Auto refresh</strong>: redraw the 3D views when the slice or these settings change; otherwise use <strong>Render 3D</strong>.</li>
       </ul>
     </section>
     <section>
@@ -186,7 +191,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
         <li>2D slice: CSV and SVG</li>
         <li>3D plots: Plotly HTML and SVG exports</li>
       </ul>
-      <p><strong>Base name</strong> controls the export filename prefix. <strong>Open Slice Window</strong> opens the current 2D slice in a separate browser window for side-by-side comparison. VTK and Cube export expect uniform axes; if the reciprocal axes are not uniform, those exports are intentionally rejected by the tool.</p>
+      <p><strong>File name</strong> sets the export filename prefix; when empty it is derived from the structure file. The Slice window <strong>Open</strong> button shows the current 2D slice in a separate browser window for side-by-side comparison. VTK and Cube export expect uniform axes; if the reciprocal axes are not uniform, those exports are intentionally rejected by the tool.</p>
       <p>For sample-specific workflows, use the <a href="diffuse_scattering_examples.html">examples guide</a>.</p>
     </section>
 
