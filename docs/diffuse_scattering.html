@@ -151,10 +151,16 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
     <tr><th>Source</th><th>Files</th><th>Moments and form factors</th></tr>
     <tr><td>RMCProfile (magnetic RMC)</td><td><code>.rmc6f</code>, spin <code>.cfg</code> (legacy or version 2), and the <code>.dat</code> control file</td><td>Unit spin vectors times <code>MAGNETIC_MOMENTS</code> (&mu;<sub>B</sub>) of the MAGNETISM block. <code>FORM_FACTOR</code> records give &lang;j<sub>0</sub>&rang;.</td></tr>
     <tr><td>Scatty</td><td><code>[stem]_spins_NN.txt</code></td><td>SPIN components along a, b, c in &mu;<sub>B</sub>. Form factors and C<sub>2</sub> come from the file.</td></tr>
-    <tr><td>LAMMPS</td><td>Data file with <code>atom_style spin</code></td><td>Unit vector times <code>sp</code> (&mu;<sub>B</sub>). Form factors are those of the element's usual ion.</td></tr>
+    <tr><td>LAMMPS</td><td>Data file with <code>atom_style spin</code></td><td>The spin direction, normalized as LAMMPS does, times <code>sp</code> (&mu;<sub>B</sub>). Form factors are the neutral atom's, since LAMMPS SPIN mostly models metals. For an ionic compound, choose the ion in the species table.</td></tr>
   </table>
   <p>Select the RMCProfile files together, or load the <code>.rmc6f</code> first. The spin file attaches to the loaded structure, and the <code>.dat</code> can come before or after it.</p>
   <p>The <strong>MnO spins</strong> example buttons load <code>Examples/magnetic</code>: the MnO type-II antiferromagnet and a random (paramagnetic) configuration as Scatty files, and the antiferromagnet again in RMCProfile's format. They set the grid to &minus;2&hellip;2 in steps of 1/6, and after the first compute the slice opens on the <em>h</em> = &frac12; plane. The ordered configuration is a perfect crystal, so its nuclear diffuse scattering is zero after average subtraction and its magnetic scattering is sharp Bragg peaks at (&frac12; &frac12; &frac12;)-type positions: the <em>h</em> = 0 plane holds only numerical noise.</p>
+  <p>The <strong>LAMMPS spins</strong> buttons load <code>Examples/lammps</code>, two <code>atom_style spin</code> data files written by <code>tools/make_lammps_examples.py</code>. After the first compute, both open on the <em>l</em> = 0 plane.</p>
+  <ul>
+    <li><strong>Fe bcc</strong>: 10&times;10&times;10 bcc cells with 2.2 &mu;<sub>B</sub> spins tilted about +z (&lang;cos &theta;&rang; = 0.8) and random displacements. Ferromagnetic Bragg peaks sit on the nuclear ones, on top of paramagnetic and thermal diffuse scattering.</li>
+    <li><strong>Skyrmion film</strong>: a triangular Fe monolayer of 60&times;60 sites in a triclinic box with a triple-q skyrmion lattice of period 10 sites. The map shows six magnetic satellites around the origin, with finite-size fringes between them because the grid step is half a box unit.</li>
+    <li>For LAMMPS data the cell is the whole box, so <em>h</em>, <em>k</em>, <em>l</em> count reciprocal-box units. Bcc (1 1 0) is (10 10 0) in the Fe example, and the skyrmion satellites lie at (6 0 0), (0 6 0), (6 6 0) and their opposites.</li>
+  </ul>
   <ul>
     <li>Spin <em>j</em> of magnetic species <em>t</em> is the <em>j</em>-th atom of atom type <em>t</em>. The type order is that of the <code>.dat</code> <code>ATOMS</code> line, or else the rmc6f "Atom types present". Version-2 files name the atom of each spin.</li>
     <li>When the <code>.rmc6f</code> has <code>Lattice vectors</code>, spins are rotated from that frame into the calculator's frame (c along z).</li>
@@ -163,7 +169,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <p>After loading, a species table in the Magnetic part of the Scattering card lists each magnetic species. Changes apply at the next <strong>Compute diffuse</strong>.</p>
   <table>
     <tr><th>Column</th><th>Meaning</th></tr>
-    <tr><td>Form factor</td><td>The coefficients from the file, or an ion from the table of 155 ions. Without a <code>.dat</code>, RMCProfile and LAMMPS species start with the element's usual ion: 3+ for rare earths and actinides, 2+ otherwise.</td></tr>
+    <tr><td>Form factor</td><td>The coefficients from the file, or an ion from the table of 155 ions. Without a <code>.dat</code>, RMCProfile species start with the element's usual ion: 3+ for rare earths and actinides, 2+ otherwise. LAMMPS species start with the neutral atom when the table has it, and otherwise with the usual ion.</td></tr>
     <tr><td>C2</td><td>The weight of &lang;j<sub>2</sub>&rang;. Its tooltip gives (2 &minus; g<sub>J</sub>)/g<sub>J</sub> for 4f and 5f ions. It is disabled when the form factor has no &lang;j<sub>2</sub>&rang; part.</td></tr>
     <tr><td>&mu; (&mu;<sub>B</sub>) or Scale</td><td>The moment per spin for RMCProfile spins, or a factor on the file's moments for the other sources.</td></tr>
   </table>

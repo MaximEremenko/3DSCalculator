@@ -43,8 +43,9 @@ The `docs/` directory contains the full documentation set
   computation) with a pinned Compute button (`Ctrl+Enter`), three
   resizable and maximizable views, and a View panel for slice, color, 3D and export
   tools; light and dark themes; example structures one click away
-  (including MnO spin configurations in Scatty and RMCProfile formats); a
-  drawer layout for tablets and phones.
+  (including MnO spin configurations in Scatty and RMCProfile formats, and
+  LAMMPS spin data for bcc Fe and a skyrmion film); a drawer layout for
+  tablets and phones.
 - **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
   intensity from Scatty spin files, RMCProfile magnetic configurations
   (moments and form factors from the `.dat` MAGNETISM block) and LAMMPS
@@ -120,6 +121,12 @@ Three benchmark `.rmc6f` configurations ship in [`Examples/`](Examples/):
 | `LiFeO2.rmc6f` | Chemical-order benchmark with diffuse manifold plus `1/2(111)` condensation. |
 | `CaTiO3.rmc6f` | Displacement benchmark with overlapping rod-like and breathing-related diffuse features. |
 | `PMN_300k.rmc6f` | Relaxor benchmark for anisotropic diffuse features and complex slice exploration. |
+
+Magnetic examples sit in [`Examples/magnetic/`](Examples/magnetic/) (MnO
+spin configurations as Scatty files and in RMCProfile's format) and
+[`Examples/lammps/`](Examples/lammps/) (LAMMPS `atom_style spin` data for
+bcc Fe and a skyrmion film, written by `tools/make_lammps_examples.py`).
+[`Examples/README.md`](Examples/README.md) describes each file.
 
 ## Tests
 

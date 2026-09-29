@@ -532,10 +532,11 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
           <input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt,.cfg,.dat" multiple hidden />
         </div>
         <details class="subsection examples-box" id="examplesBox">
-          <summary>Examples <span class="fine">LiFeO&#8322;, CaTiO&#8323;, PMN, MnO spins</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
+          <summary>Examples <span class="fine">LiFeO&#8322;, CaTiO&#8323;, PMN, MnO, LAMMPS spins</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></summary>
           <div class="subsection-body">
           <div class="examples"><span>Structures</span><button class="chip-btn" type="button" data-example="Examples/LiFeO2.rmc6f" title="LiFeO2, 64 000 atoms">LiFeO&#8322;</button><button class="chip-btn" type="button" data-example="Examples/CaTiO3.rmc6f" title="CaTiO3">CaTiO&#8323;</button><button class="chip-btn" type="button" data-example="Examples/PMN_300k.rmc6f" title="PMN at 300 K (30 MB download)">PMN</button></div>
           <div class="examples"><span>MnO spins</span><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_order_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: MnO type-II antiferromagnet, 864 Mn spins">AFM</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO_random_spins.txt" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="Scatty spin file: random MnO spins, an ideal paramagnet">random</button><button class="chip-btn" type="button" data-example="Examples/magnetic/MnO.rmc6f Examples/magnetic/MnO_spins.cfg Examples/magnetic/MnO.dat" data-range="-2,2" data-plane="1,0,0 0.5,0,0" title="The AFM configuration in RMCProfile format: .rmc6f + spin .cfg + .dat with the MAGNETISM block">RMCProfile</button></div>
+            <div class="examples"><span>LAMMPS spins</span><button class="chip-btn" type="button" data-example="Examples/lammps/fe_bcc_spins.data" data-range="-20,20,1" data-plane="0,0,1 0,0,0" title="LAMMPS atom_style spin: bcc Fe, 2000 atoms, 2.2 muB spins with thermal disorder (hkl in box units: bcc (1 1 0) is (10 10 0))">Fe bcc</button><button class="chip-btn" type="button" data-example="Examples/lammps/skyrmion_film.data" data-range="-13,13,0.5;-13,13,0.5;0,0,1" data-plane="0,0,1 0,0,0" title="LAMMPS atom_style spin: triple-q skyrmion lattice in a triangular Fe monolayer (3600 atoms)">skyrmion film</button></div>
           </div>
         </details>
         <div class="meta">
@@ -2189,7 +2190,7 @@ parsed=scatty?parseScatty(f.name,text):lammps?parseLammps(f.name,text):parseRMC(
 }
 if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
 if(state.rmcMagnetism&&state.rmcMagnetism.types&&!state.rmcMagnetism.types.every(t=>parsed.present.some(e=>e.toLowerCase()===String(t).toLowerCase())))state.rmcMagnetism=null;
-if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.rmcBase=null;state.res=null;state.pendingPlane=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();renderMagneticSpecies();updateCentringUi();if($("modInfo"))$("modInfo").textContent="";if(typeof updateModulationUi==="function")updateModulationUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
+if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.rmcBase=null;state.res=null;state.pendingPlane=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";else if(parsed.magnetic&&$("magMode")&&$("magMode").value==="nuclear")$("magMode").value="both";updateMagneticUi();renderMagneticSpecies();updateCentringUi();if($("modInfo"))$("modInfo").textContent="";if(typeof updateModulationUi==="function")updateModulationUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
 const sourceWarning=parsed.sourceWarnings&&parsed.sourceWarnings.length?parsed.sourceWarnings.join(" "):"";
 if(parsed.unknown.length&&!parsed.magneticOnly)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");
 else if(sourceWarning)status("Loaded "+f.name+". "+sourceWarning,"warn");
@@ -2653,7 +2654,7 @@ bind();draw();
   var exampleButtons=document.querySelectorAll("[data-example]"),fromDisk=location.protocol==="file:";
   // Examples/embedded/*.js hold gzip+base64 copies (tools/make_embedded_examples.py),
   // which a page opened from disk can load as scripts; PMN (30 MB) has none.
-  var EMBEDDED_EXAMPLES=["Examples/LiFeO2.rmc6f","Examples/CaTiO3.rmc6f","Examples/magnetic/MnO_order_spins.txt","Examples/magnetic/MnO_random_spins.txt","Examples/magnetic/MnO.rmc6f","Examples/magnetic/MnO_spins.cfg","Examples/magnetic/MnO.dat"];
+  var EMBEDDED_EXAMPLES=["Examples/LiFeO2.rmc6f","Examples/CaTiO3.rmc6f","Examples/magnetic/MnO_order_spins.txt","Examples/magnetic/MnO_random_spins.txt","Examples/magnetic/MnO.rmc6f","Examples/magnetic/MnO_spins.cfg","Examples/magnetic/MnO.dat","Examples/lammps/fe_bcc_spins.data","Examples/lammps/skyrmion_film.data"];
   function embeddedExample(url){
     return new Promise(function(resolve,reject){
       var store=window.__3dsExamples||{};
@@ -2689,9 +2690,10 @@ bind();draw();
           return new File([await resp.blob()],names[i]);
         }));
         await onFiles(files);
-        var range=(btn.dataset.range||"").split(",").map(Number);
-        if(range.length===2&&range.every(Number.isFinite)){
-          ["h","k","l"].forEach(function(a){$(a+"Min").value=range[0];$(a+"Max").value=range[1];});
+        // data-range: "min,max[,step]" for all axes, or three of them separated by ";" (h;k;l)
+        var ranges=(btn.dataset.range||"").split(";").filter(Boolean).map(function(t){return t.split(",").map(Number);});
+        if(ranges.length&&ranges.every(function(r){return r.length>=2&&r.every(Number.isFinite);})){
+          ["h","k","l"].forEach(function(a,d){var r=ranges[ranges.length===3?d:0];$(a+"Min").value=r[0];$(a+"Max").value=r[1];if(r.length>2)$(a+"Step").value=r[2];});
           updateGridSummary();
         }
         var plane=(btn.dataset.plane||"").split(/\s+/).map(function(t){return t.split(",").map(Number);});

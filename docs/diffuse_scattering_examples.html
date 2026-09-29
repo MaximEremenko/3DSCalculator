@@ -56,6 +56,12 @@
     <li><a href="../Examples/CaTiO3.rmc6f"><code>CaTiO3.rmc6f</code></a></li>
     <li><a href="../Examples/PMN_300k.rmc6f"><code>PMN_300k.rmc6f</code></a></li>
   </ul>
+  <p>Magnetic examples (see <a href="#magnetic-examples">Magnetic Examples</a>):</p>
+  <ul>
+    <li><a href="../Examples/magnetic/MnO_order_spins.txt"><code>magnetic/MnO_order_spins.txt</code></a>, <a href="../Examples/magnetic/MnO_random_spins.txt"><code>magnetic/MnO_random_spins.txt</code></a> (Scatty spin files)</li>
+    <li><a href="../Examples/magnetic/MnO.rmc6f"><code>magnetic/MnO.rmc6f</code></a>, <a href="../Examples/magnetic/MnO_spins.cfg"><code>magnetic/MnO_spins.cfg</code></a>, <a href="../Examples/magnetic/MnO.dat"><code>magnetic/MnO.dat</code></a> (RMCProfile, load together)</li>
+    <li><a href="../Examples/lammps/fe_bcc_spins.data"><code>lammps/fe_bcc_spins.data</code></a>, <a href="../Examples/lammps/skyrmion_film.data"><code>lammps/skyrmion_film.data</code></a> (LAMMPS <code>atom_style spin</code>)</li>
+  </ul>
 </section>
 <section>
   <h2>At A Glance</h2>
@@ -162,6 +168,20 @@
   </ul>
   <p class="small">Scientific context references: Eremenko et al., <a href="https://www.nature.com/articles/s41467-025-62658-1"><em>Emergent topological polarization textures in relaxor ferroelectrics</em></a>, Nature Communications <strong>16</strong>, 7531 (2025); and Eremenko et al., <em>Local atomic order and hierarchical polar nanoregions in a classical relaxor ferroelectric</em>, Nature Communications <strong>10</strong>(1), 2728 (2019).</p>
 </section>
+<section id="magnetic-examples">
+  <h2>Magnetic Examples</h2>
+  <p>Five spin configurations ship in <code>Examples/magnetic</code> and <code>Examples/lammps</code>, under <strong>MnO spins</strong> and <strong>LAMMPS spins</strong> in the Structure card's <strong>Examples</strong>. Each button sets the grid, and after the first compute the slice opens on the plane with the main features. Magnetic scattering is computed for neutrons. When a file carries spins and the Magnetic mode is nuclear only, the mode switches to nuclear + magnetic.</p>
+  <table>
+    <tr><th>Button</th><th>Files</th><th>What to look for</th></tr>
+    <tr><td>MnO spins: AFM</td><td><code>MnO_order_spins.txt</code> (Scatty)</td><td>The type-II antiferromagnet of MnO: magnetic Bragg peaks at (&frac12; &frac12; &frac12;)-type positions on the <em>h</em> = &frac12; plane.</td></tr>
+    <tr><td>MnO spins: random</td><td><code>MnO_random_spins.txt</code> (Scatty)</td><td>An ideal paramagnet: magnetic intensity that falls off smoothly with the form factor.</td></tr>
+    <tr><td>MnO spins: RMCProfile</td><td><code>MnO.rmc6f</code>, <code>MnO_spins.cfg</code>, <code>MnO.dat</code></td><td>The same antiferromagnet in RMCProfile's format, with moments and &lang;j<sub>0</sub>&rang; from the <code>.dat</code> MAGNETISM block.</td></tr>
+    <tr><td>LAMMPS spins: Fe bcc</td><td><code>fe_bcc_spins.data</code></td><td>Ferromagnetic Bragg peaks on the nuclear ones, such as (10 10 0) and (20 0 0), over paramagnetic and thermal diffuse scattering. The <em>l</em> = 0 plane.</td></tr>
+    <tr><td>LAMMPS spins: skyrmion film</td><td><code>skyrmion_film.data</code></td><td>A triple-q skyrmion lattice in a triangular Fe monolayer: six magnetic satellites around the origin on the <em>l</em> = 0 plane.</td></tr>
+  </table>
+  <p>A LAMMPS data file has no unit cell, so the calculator takes the whole box as the cell, and <em>h</em>, <em>k</em>, <em>l</em> count reciprocal-box units. The Fe box is 10 cells wide, so bcc (1 1 0) appears at (10 10 0). The skyrmion period of 10 sites in a 60-site box puts the satellites 6 units from the origin, at (6 0 0), (0 6 0), (6 6 0) and their opposites. Both files are written by <code>tools/make_lammps_examples.py</code>.</p>
+  <p>The MnO Scatty results are checked against J. A. M. Paddison's Scatty in the test suite.</p>
+</section>
 <section>
   <h2>How To Choose The Right Example</h2>
   <table>
@@ -169,6 +189,9 @@
     <tr><td>normal-plane slicing and diffuse manifolds</td><td><code>LiFeO2.rmc6f</code></td></tr>
     <tr><td>how different structural mechanisms give different diffuse-feature shapes</td><td><code>CaTiO3.rmc6f</code></td></tr>
     <tr><td>anisotropic relaxor diffuse scattering in a large benchmark</td><td><code>PMN_300k.rmc6f</code></td></tr>
+    <tr><td>magnetic Bragg peaks and paramagnetic scattering</td><td>MnO spins (AFM, random)</td></tr>
+    <tr><td>magnetic RMCProfile input</td><td>MnO spins: RMCProfile</td></tr>
+    <tr><td>LAMMPS spins and the magnetic satellites of a modulated structure</td><td>LAMMPS spins: skyrmion film</td></tr>
   </table>
 </section>
 <section>

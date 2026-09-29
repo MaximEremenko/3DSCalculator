@@ -21,6 +21,8 @@ FILES = [
     "Examples/magnetic/MnO.rmc6f",
     "Examples/magnetic/MnO_spins.cfg",
     "Examples/magnetic/MnO.dat",
+    "Examples/lammps/fe_bcc_spins.data",
+    "Examples/lammps/skyrmion_film.data",
 ]
 OUT = Path("Examples/embedded")
 
