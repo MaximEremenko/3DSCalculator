@@ -143,7 +143,12 @@
             }
             const atomPosition = matrixRows(file, 'entry/data/atom_position', atomCount, 3, true);
             let atomUnitCell = matrixRows(file, 'entry/data/atom_unit_cell', atomCount, 3, false);
-            const atomUnitCellPresent = !!atomUnitCell;
+            // RMCProfile writes atom_unit_cell = 1 for every atom when its source
+            // had no cell references; with more than one cell that cannot be real.
+            const atomUnitCellDefaulted = !!atomUnitCell &&
+                unitCells[0] * unitCells[1] * unitCells[2] > 1 &&
+                atomUnitCell.every(c => c[0] === 1 && c[1] === 1 && c[2] === 1);
+            const atomUnitCellPresent = !!atomUnitCell && !atomUnitCellDefaulted;
             if (!atomUnitCell) atomUnitCell = Array.from({ length: atomCount }, () => [1, 1, 1]);
             const atomType = numericDataset(file, 'entry/data/atom_type', true).slice(0, atomCount).map(Math.round);
             // RMCProfile, DISCUS and the Python reference join names with ';';
@@ -176,6 +181,7 @@
                 atomPosition,
                 atomUnitCell,
                 atomUnitCellPresent,
+                atomUnitCellDefaulted,
                 atomType,
                 typeNames,
                 elements,

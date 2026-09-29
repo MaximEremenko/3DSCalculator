@@ -1491,7 +1491,7 @@ needDiffuseCore();needRmcReader();
 const supercell=model.unitCells.slice(0,3),parent=model.cellLengths.slice(0,3),angles=model.cellAngles.slice(0,3),n=model.atomCount,fractional=new Float64Array(n*3),cellIndex=model.atomUnitCellPresent===false?null:new Int32Array(n*3);
 for(let i=0;i<n;i++){const p=model.atomPosition[i],uc=model.atomUnitCell[i];for(let d=0;d<3;d++){fractional[i*3+d]=model.coordinatesAreSupercellFractional?p[d]:p[d]/supercell[d];if(cellIndex)cellIndex[i*3+d]=Math.round(uc[d])-1;}}
 const structure=window.RMC6fReader.buildSupercellStructure({parentCellDeg:[parent[0],parent[1],parent[2],angles[0],angles[1],angles[2]],supercell,fractional,cellIndex,elements:model.elements});
-const parsed={file:String(name||""),...structure,cellDeg:[parent[0]*supercell[0],parent[1]*supercell[1],parent[2]*supercell[2],angles[0],angles[1],angles[2]],sourceFormat:"unified structure HDF5",legacyContract:model.legacyContract};
+const parsed={file:String(name||""),...structure,cellDeg:[parent[0]*supercell[0],parent[1]*supercell[1],parent[2]*supercell[2],angles[0],angles[1],angles[2]],sourceFormat:"unified structure HDF5",legacyContract:model.legacyContract,cellIndexDefaulted:!!model.atomUnitCellDefaulted};
 return window.DiffuseCore.attachNeutronCoefficients(parsed,10);
 }
 
@@ -2222,7 +2222,7 @@ parsed=parseUnifiedRMC(f.name,model);
 const text=await f.text();
 parsed=/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512))?parseLammps(f.name,text):parseRMC(f.name,text);
 }
-if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
+if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
 state.rmc=parsed;state.res=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);syncResultControls();draw();setPlot3dStatus("3D view is idle.");
 const sourceWarning=parsed.sourceWarnings&&parsed.sourceWarnings.length?parsed.sourceWarnings.join(" "):"";
 if(parsed.unknown.length)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");

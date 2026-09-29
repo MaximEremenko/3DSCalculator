@@ -92,6 +92,19 @@ test("reports a missing atom_unit_cell instead of hiding it", async () => {
   assert.equal(model.atomUnitCellPresent, false);
 });
 
+test("treats an all-ones atom_unit_cell in a multi-cell supercell as missing", async () => {
+  const ctx = await loadH5(["js/unified_hdf5.js"]);
+  const ones = i32(new Array(12).fill(1), [4, 3]);
+  const defaulted = ctx.UnifiedH5.readStructure(ctx.h5wasm,
+    writeEntryData(ctx.h5wasm, rmcProfile68({ atom_unit_cell: ones })), "ones.h5");
+  assert.equal(defaulted.atomUnitCellPresent, false);
+  assert.equal(defaulted.atomUnitCellDefaulted, true);
+  const singleCell = ctx.UnifiedH5.readStructure(ctx.h5wasm,
+    writeEntryData(ctx.h5wasm, rmcProfile68({ atom_unit_cell: ones, unit_cells: i32([1, 1, 1]) })), "one_cell.h5");
+  assert.equal(singleCell.atomUnitCellPresent, true);
+  assert.equal(singleCell.atomUnitCellDefaulted, false);
+});
+
 test("rejects atom types outside types_names", async () => {
   const ctx = await loadH5(["js/unified_hdf5.js"]);
   const bytes = writeEntryData(ctx.h5wasm, rmcProfile68({ atom_type: i32([1, 1, 2, 3]) }));
