@@ -564,7 +564,7 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
       <div class="sb-col">
         <section class="sb-section">
           <h2 class="sb-heading">File Input</h2>
-          <div id="drop" class="drop" tabindex="0">Drop .rmc6f or unified structure .h5 here or click<input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps" hidden /></div>
+          <div id="drop" class="drop" tabindex="0">Drop .rmc6f or unified structure .h5 here or click<input id="file" type="file" accept=".rmc6f,.h5,.hdf5,.data,.lmp,.lammps,.txt" hidden /></div>
           <div class="meta">
             <div class="k">File</div><div id="mFile">-</div>
             <div class="k">Atoms</div><div id="mAtoms">-</div>
@@ -623,6 +623,12 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
                 <label>Model<select id="scatterModel"><option value="fast">Fast (neutron)</option><option value="grouped_exact">Grouped exact</option></select></label>
                 <label>Table<select id="scatterTable" disabled><option value="0">0: Waasmaier</option><option value="1">1: Lobato</option><option value="2">2: Peng 0.4</option><option value="3">3: Doyle</option><option value="4">4: Weickenmeier</option><option value="5">5: Kirkland</option></select></label>
                 <label>Ion valence<input id="ionValence" type="text" value="" placeholder="Fe:2,O:-2"></label>
+              </div>
+              <div class="row4">
+                <label>Magnetic<select id="magMode"><option value="nuclear" selected>nuclear only</option><option value="magnetic">magnetic only</option><option value="both">nuclear + magnetic</option></select></label>
+                <label>Magnetic Q=0<select id="magQ0"><option value="zero" selected>0 (RMCProfile)</option><option value="average">2/3 |M|&sup2; (Scatty)</option></select></label>
+                <label>Paramagnet<select id="magPara"><option value="0" selected>keep</option><option value="1">subtract (2/3)&Sigma;&mu;&sup2;f&sup2;</option></select></label>
+                <label>Spins<span id="magInfo" class="small">no spins loaded</span></label>
               </div>
               <hr class="sectionDivider">
               <h3>Smoothing</h3>
@@ -966,6 +972,8 @@ html[data-theme="light"] .topbar-chip{background:#3a4d66;color:#c8d5e2}
 <script src="./js/scattering_coeff_db.js"></script>
 <script src="./js/scattering_coeff_sources.js"></script>
 <script src="./js/unified_hdf5.js"></script>
+<script src="./js/magnetic_form_factors.js"></script>
+<script src="./js/scatty_reader.js"></script>
 <script src="./js/type1_grid.js"></script>
 <script src="./js/wgpu_type1.js"></script>
 <script>
@@ -1478,6 +1486,7 @@ function inter3(x,y,z){needDiffuseCore();return window.DiffuseCore.interleave3(x
 function creal(a){needDiffuseCore();return window.DiffuseCore.complexReal(a);}
 
 function parseRMC(name,text){needRmcReader();needDiffuseCore();const parsed=window.RMC6fReader.parse(name,text);return window.DiffuseCore.attachNeutronCoefficients(parsed,10);}
+function parseScatty(name,text){if(!window.ScattyReader)throw new Error("Scatty reader missing. Check ./js/scatty_reader.js");needDiffuseCore();return window.DiffuseCore.attachNeutronCoefficients(window.ScattyReader.parse(name,text),10);}
 function parseLammps(name,text){if(!window.LammpsDataReader||typeof window.LammpsDataReader.parse!=="function")throw new Error("LAMMPS data reader missing. Check ./js/lammps_data_reader.js");needDiffuseCore();const parsed=window.LammpsDataReader.parse(name,text);return window.DiffuseCore.attachNeutronCoefficients(parsed,10);}
 
 async function ensureUnifiedH5(){
@@ -1814,6 +1823,7 @@ if(backend==="exact"&&r.atoms*grid>EXACT_SUM_WORK_LIMIT)throw new Error(`Exact s
 $("run").disabled=true;$("saveDat").disabled=true;$("saveJson").disabled=true;$("saveUnified").disabled=true;$("saveVtk").disabled=true;$("saveCube").disabled=true;$("saveSliceSvg").disabled=true;$("saveSliceCsv").disabled=true;$("savePlaneSvg").disabled=true;$("saveIsoSvg").disabled=true;$("savePlaneHtml").disabled=true;$("saveIsoHtml").disabled=true;$("axis").disabled=true;$("idx").disabled=true;$("scale").disabled=true;$("render3d").disabled=true;$("openSliceWin").disabled=true;$("sliceMode").disabled=true;$("planeMove").disabled=true;$("planeApply").disabled=true;
 const opts={tol:Number($("tol").value),upsampfac:Number($("upsamp").value)},sub=$("subAvg").value==="1",normMode=$("normMode")?$("normMode").value:"atom",smoothEnabled=$("smooth3d").value==="1",smoothType=$("smoothType").value,chebDb=Number.isFinite(Number($("chebDb").value))?Number($("chebDb").value):100,smoothScale=Math.max(1,Math.floor(Number($("smoothScale").value)||1)),t0=performance.now(),timings={prepare:0,a:0,aavg:0,adelta:0,finalize:0,smooth:0,webgpu:{}};
 const onStageTiming=(stage,dt)=>{timings.webgpu[stage]=(timings.webgpu[stage]||0)+dt;};
+const magneticCfg={mode:($("magMode")&&$("magMode").value)||"nuclear",qZero:($("magQ0")&&$("magQ0").value)||"zero",subtractParamagnet:!!($("magPara")&&$("magPara").value==="1")};
 status(`Preparing grid ${shape[0]}×${shape[1]}×${shape[2]} (${grid}) for ${scatteringCfg.type} ...`);await new Promise(r=>setTimeout(r,0));
 needDiffuseAmplitude();
 const chunkSize=useWebgpuChunking?(gridAware?Math.max(1,Math.floor(limit/planeSize))*planeSize:Math.max(1,Math.floor(limit))):grid,totalChunks=Math.max(1,Math.ceil(grid/chunkSize));
@@ -1826,6 +1836,7 @@ opts,
 sub,
 chunkSize,
 scattering:scatteringCfg,
+magnetic:magneticCfg,
 runType3,
 gridAware,
 deltaOnLattice:gridAware||backend==="direct"||backend==="exact",
@@ -1867,10 +1878,10 @@ const f=1/normCount;
 for(let i=0;i<Iout.length;i++)Iout[i]*=f;
 min*=f;max*=f;
 }
-state.res={file:r.file,shape,h,k,l,Bq:r.Bq,Bp:r.Bp,I:Iout,min,max,backend,opts:{...opts,subtractAverage:sub,includedAtomCount:amp.profile&&Number.isFinite(amp.profile.includedAtomCount)?amp.profile.includedAtomCount:r.atoms,averageModel:sub?"lattice_sum_times_mean_cell":"off",averageCellCount:avgCellCount,qPointCount:qPointCount,intensityNormalization:normMode==="atom"?"per_atom":normMode==="qpoint"?"per_q_point":"none",normalizationCount:normCount,targetChunkSize:chunkSize,targetChunks:totalChunks,scattering:scatteringCfg,scatteringEngine:amp.profile&&amp.profile.engine?amp.profile.engine:"neutron_fast",type1SpotCheck:gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,smoothing:{enabled:smoothEnabled,type:smoothType,chebDb:chebDb,scale:smoothScale,kernel:smoothMeta?smoothMeta.kernel:null,engine:smoothMeta?smoothMeta.engine:null}},timings};
+state.res={file:r.file,shape,h,k,l,Bq:r.Bq,Bp:r.Bp,I:Iout,min,max,backend,opts:{...opts,subtractAverage:sub,includedAtomCount:amp.profile&&Number.isFinite(amp.profile.includedAtomCount)?amp.profile.includedAtomCount:r.atoms,averageModel:sub?"lattice_sum_times_mean_cell":"off",averageCellCount:avgCellCount,qPointCount:qPointCount,intensityNormalization:normMode==="atom"?"per_atom":normMode==="qpoint"?"per_q_point":"none",normalizationCount:normCount,targetChunkSize:chunkSize,targetChunks:totalChunks,scattering:scatteringCfg,magnetic:magneticCfg,scatteringEngine:amp.profile&&amp.profile.engine?amp.profile.engine:"neutron_fast",type1SpotCheck:gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,smoothing:{enabled:smoothEnabled,type:smoothType,chebDb:chebDb,scale:smoothScale,kernel:smoothMeta?smoothMeta.kernel:null,engine:smoothMeta?smoothMeta.engine:null}},timings};
 const newSig=planeSig(state.res),canRestorePlane=!!(prevPlaneState&&prevPlaneState.signature===newSig);
 state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=canRestorePlane?prevPlaneState:null;state.planeSliceCache=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;
-const dt=(performance.now()-t0)/1000,timingParts=[`prep=${fmtMs(timings.prepare)}`,`A=${fmtMs(timings.a)}`];if(sub){timingParts.push(`Aavg=${fmtMs(timings.aavg)}`);timingParts.push(`Adelta=${fmtMs(timings.adelta)}`);}timingParts.push(`final=${fmtMs(timings.finalize)}`);if(timings.smooth>0)timingParts.push(`smooth=${fmtMs(timings.smooth)}`);const gpuBreakdown=backend==="webgpu_fft"?formatWebgpuStageTotals(timings.webgpu):"",chunkMsg=totalChunks>1?` chunks=${totalChunks}`:"";const timingMsg=`Timing: ${timingParts.join(", ")}${gpuBreakdown?` | GPU ${gpuBreakdown}`:""}${chunkMsg}`;const smoothMsg=smoothMeta?` Smoothed (${smoothMeta.type}, kernel=${smoothMeta.kernel.join("x")}).`:"";const scatMsg=amp.profile&&amp.profile.description?` ${amp.profile.description}.`:"";const avgNormMsg=sub?` Average: lattice sum × mean cell (N_cell=${avgCellCount}).`:"";const normUnits={neutron:"barn/sr per atom",xray:"electron units per atom",electron:"Å²/sr per atom"}[scatteringCfg.type]||"per atom",normMsg=normMode==="atom"?` Normalized per atom (N=${atomCount}; ${normUnits}).`:normMode==="qpoint"?` Normalized by 1/Nq (Nq=${qPointCount}).`:" Normalization OFF.";const unknownMsg=(scatteringCfg.type==="neutron"&&r.unknown.length)?` Unknown elements: ${r.unknown.join(", ")} -> fca=10.0.`:"";const t1Check=gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,t1Msg=Number.isFinite(t1Check)?` Type-1 spot check ${t1Check.toExponential(1)}.`:"";status(`Done in ${dt.toFixed(2)} s. I range [${min.toExponential(4)}, ${max.toExponential(4)}].${scatMsg}${avgNormMsg}${normMsg} ${timingMsg}${smoothMsg}${t1Msg}${unknownMsg}`,(scatteringCfg.type==="neutron"&&r.unknown.length)?"warn":"ok");
+const dt=(performance.now()-t0)/1000,timingParts=[`prep=${fmtMs(timings.prepare)}`,`A=${fmtMs(timings.a)}`];if(sub){timingParts.push(`Aavg=${fmtMs(timings.aavg)}`);timingParts.push(`Adelta=${fmtMs(timings.adelta)}`);}timingParts.push(`final=${fmtMs(timings.finalize)}`);if(timings.smooth>0)timingParts.push(`smooth=${fmtMs(timings.smooth)}`);const gpuBreakdown=backend==="webgpu_fft"?formatWebgpuStageTotals(timings.webgpu):"",chunkMsg=totalChunks>1?` chunks=${totalChunks}`:"";const timingMsg=`Timing: ${timingParts.join(", ")}${gpuBreakdown?` | GPU ${gpuBreakdown}`:""}${chunkMsg}`;const smoothMsg=smoothMeta?` Smoothed (${smoothMeta.type}, kernel=${smoothMeta.kernel.join("x")}).`:"";const scatMsg=(amp.profile&&amp.profile.description?` ${amp.profile.description}.`:"")+(magneticCfg.mode!=="nuclear"?` Magnetic: ${magneticCfg.mode==="both"?"nuclear + magnetic":"magnetic only"}${magneticCfg.subtractParamagnet?", ideal paramagnet subtracted":""}.`:"");const avgNormMsg=sub?` Average: lattice sum × mean cell (N_cell=${avgCellCount}).`:"";const normUnits={neutron:"barn/sr per atom",xray:"electron units per atom",electron:"Å²/sr per atom"}[scatteringCfg.type]||"per atom",normMsg=normMode==="atom"?` Normalized per atom (N=${atomCount}; ${normUnits}).`:normMode==="qpoint"?` Normalized by 1/Nq (Nq=${qPointCount}).`:" Normalization OFF.";const unknownMsg=(scatteringCfg.type==="neutron"&&magneticCfg.mode!=="magnetic"&&r.unknown.length)?` Unknown elements: ${r.unknown.join(", ")} -> fca=10.0.`:"";const t1Check=gridAware&&window.WgpuType1?window.WgpuType1.stats.lastCheckError:null,t1Msg=Number.isFinite(t1Check)?` Type-1 spot check ${t1Check.toExponential(1)}.`:"";status(`Done in ${dt.toFixed(2)} s. I range [${min.toExponential(4)}, ${max.toExponential(4)}].${scatMsg}${avgNormMsg}${normMsg} ${timingMsg}${smoothMsg}${t1Msg}${unknownMsg}`,(scatteringCfg.type==="neutron"&&r.unknown.length)?"warn":"ok");
 $("scale").value=$("defScale").value;syncResultControls();updateSliceUI();draw();schedule3dRender(true,0);$("run").disabled=false;
 }
 
@@ -2069,8 +2080,8 @@ status("Writing unified HDF5 data ...");
 const h5=await ensureUnifiedH5(),r=state.res,ah=axisUniformInfo(r.h),ak=axisUniformInfo(r.k),al=axisUniformInfo(r.l);
 if(!ah.uniform||!ak.uniform||!al.uniform)throw new Error("Unified data output requires uniform H, K, and L axes.");
 const s=state.rmc.super,c=state.rmc.cellDeg,parentCell=[c[0]/s[0],c[1]/s[1],c[2]/s[2],c[3],c[4],c[5]],o=r.opts||{},scattering=o.scattering&&o.scattering.type||"unknown",sm=o.smoothing||{};
-const settings=[`${scattering} ${o.scattering&&o.scattering.model||""}`.trim(),o.subtractAverage?"average subtracted":"average kept",`normalization ${o.intensityNormalization||"none"}`,sm.enabled?`smoothing ${sm.type}`:"no smoothing",`backend ${r.backend} tol ${o.tol}`];
-const bytes=window.UnifiedH5.writeData(h5,{dims:r.shape,corner:[r.h[0],r.k[0],r.l[0]],vectors:[[ah.step,0,0],[0,ak.step,0],[0,0,al.step]],values:r.I,cell:parentCell,axesType:"hkl",content:"intensity",radiation:scattering,radiationSymbol:"none",withBragg:o.subtractAverage?"bragg_subtracted":"bragg_present",experiment:"calculated",style:"single_diffraction",authorName:"unknown",creationMethod:`3DSCalculator (${settings.join("; ")})`});
+const settings=[`${scattering} ${o.scattering&&o.scattering.model||""}`.trim(),o.magnetic&&o.magnetic.mode!=="nuclear"?`magnetic ${o.magnetic.mode}${o.magnetic.subtractParamagnet?" minus paramagnet":""}`:null,o.subtractAverage?"average subtracted":"average kept",`normalization ${o.intensityNormalization||"none"}`,sm.enabled?`smoothing ${sm.type}`:"no smoothing",`backend ${r.backend} tol ${o.tol}`];
+const bytes=window.UnifiedH5.writeData(h5,{dims:r.shape,corner:[r.h[0],r.k[0],r.l[0]],vectors:[[ah.step,0,0],[0,ak.step,0],[0,0,al.step]],values:r.I,cell:parentCell,axesType:"hkl",content:"intensity",radiation:scattering,radiationSymbol:"none",withBragg:o.subtractAverage?"bragg_subtracted":"bragg_present",experiment:"calculated",style:"single_diffraction",authorName:"unknown",creationMethod:`3DSCalculator (${settings.filter(Boolean).join("; ")})`});
 saveText(`${base()}_unified.h5`,bytes,"application/x-hdf5");
 status("Saved unified HDF5 diffuse data.","ok");
 }catch(err){status(`Unified HDF5 export failed: ${err.message}`,"err");}
@@ -2226,15 +2237,15 @@ const h5=await ensureUnifiedH5(),bytes=new Uint8Array(await f.arrayBuffer()),mod
 parsed=parseUnifiedRMC(f.name,model);
 }else{
 const text=await f.text();
-parsed=/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512))?parseLammps(f.name,text):parseRMC(f.name,text);
+parsed=window.ScattyReader&&window.ScattyReader.detect(text)?parseScatty(f.name,text):/\.(?:data|lmp|lammps)$/i.test(f.name)||/LAMMPS\s+data\s+file/i.test(text.slice(0,512))?parseLammps(f.name,text):parseRMC(f.name,text);
 }
 if(!parsed.cellIndex){$("subAvg").value="0";parsed.sourceWarnings=parsed.sourceWarnings||[];parsed.sourceWarnings.push(parsed.lammps?"Subtract avg was set OFF because LAMMPS data has no ideal reference lattice.":parsed.cellIndexDefaulted?"Subtract avg was set OFF because atom_unit_cell is 1 for every atom (the source had no cell references).":"Subtract avg was set OFF because the file has no atom_unit_cell (no per-atom cell references).");}
-if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.res=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);syncResultControls();draw();setPlot3dStatus("3D view is idle.");
+if(window.WgpuType1)window.WgpuType1.reset();state.rmc=parsed;state.res=null;state.volCache=null;state.sliceLevels=null;state.lastBar=null;state.plane=null;state.planeSliceCache=null;state.planeMoving=false;state.planeMoveCameraLock=null;state.planeTraceBusy=false;state.planeTraceQueued=null;state.planeTraceReqId=0;state.render3dEpoch++;state.sceneCamera={iso:null,plane:null};meta(parsed);buildElementCheckboxes(parsed.present);if(parsed.magneticOnly&&$("magMode"))$("magMode").value="magnetic";updateMagneticUi();syncResultControls();draw();setPlot3dStatus("3D view is idle.");
 const sourceWarning=parsed.sourceWarnings&&parsed.sourceWarnings.length?parsed.sourceWarnings.join(" "):"";
-if(parsed.unknown.length)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");
+if(parsed.unknown.length&&!parsed.magneticOnly)status(`Loaded ${f.name}. Unknown elements: ${parsed.unknown.join(", ")} -> fca=10.0.`,"warn");
 else if(sourceWarning)status("Loaded "+f.name+". "+sourceWarning,"warn");
 else if(parsed.legacyContract)status(`Loaded legacy unified structure ${f.name}. Ready to compute.`,"warn");
-else status(`Loaded ${f.name}. Ready to compute.`,"ok");
+else status(`Loaded ${f.name}.${parsed.magnetic?` ${magneticSummary(parsed)}.`:""} Ready to compute.`,"ok");
 }
 
 const SCATTER_MODEL_OPTIONS={
@@ -2282,6 +2293,8 @@ valence.disabled=!(type==="electron"&&model==="ion_peng");
 valence.placeholder=model==="ion_peng"?"Fe:2,O:-2":"";
 }
 }
+function magneticSummary(r){const m=r.magnetic,n=Array.from(m.speciesOfAtom).filter(v=>v>=0).length;return`${n} magnetic moments (${m.species.map(sp=>sp.label+(sp.formFactor.c2?`, C2 ${sp.formFactor.c2}`:"")).join("; ")})`;}
+function updateMagneticUi(){const mode=$("magMode");if(!mode)return;const r=state.rmc,mag=!!(r&&r.magnetic),neutron=(($("scatterType")&&$("scatterType").value)||"neutron")==="neutron";for(const o of mode.options)if(o.value!=="nuclear")o.disabled=!mag||!neutron;if(!mag||!neutron)mode.value="nuclear";$("magQ0").disabled=$("magPara").disabled=mode.value==="nuclear";$("magInfo").textContent=mag?magneticSummary(r):"no spins loaded";}
 function tableNumFromUi(type,model,tableRaw){
 if(type==="xray"){
 const v=Math.floor(Number(tableRaw));
@@ -2318,7 +2331,7 @@ function bind(){const drop=$("drop"),file=$("file");drop.addEventListener("click
 $("backend").addEventListener("change",()=>{if($("backend").value!=="wgpu_type1"&&window.WgpuType1)window.WgpuType1.reset();if(($("backend").value==="webgpu_fft"||$("backend").value==="wgpu_type1")&&!navigator.gpu){$("backend").value="fft";status("WebGPU unavailable in this browser; switched backend to CPU FFT.","warn");}applyBackendDefaults($("backend").value,true);});
 if(!navigator.gpu){const be=$("backend");for(const v of ["webgpu_fft","wgpu_type1"]){const opt=be.querySelector(`option[value="${v}"]`);if(opt){opt.disabled=true;opt.textContent=opt.textContent.replace("(WebGPU)","(WebGPU unavailable)");}}if(be.value==="webgpu_fft"||be.value==="wgpu_type1")be.value="fft";}
 applyBackendDefaults($("backend").value,false);
-$("scatterType").addEventListener("change",updateScatteringUi);
+$("scatterType").addEventListener("change",()=>{updateScatteringUi();updateMagneticUi();});$("magMode").addEventListener("change",updateMagneticUi);
 $("scatterModel").addEventListener("change",updateScatteringUi);
 $("smooth3d").addEventListener("change",updateSmoothUi);$("smoothType").addEventListener("change",updateSmoothUi);
 $("run").addEventListener("click",()=>compute().catch(err=>{$("run").disabled=false;syncResultControls();status(`Compute failed: ${err.message}`,"err");}));

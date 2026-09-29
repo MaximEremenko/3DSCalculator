@@ -49,12 +49,12 @@
       <h2>Quick Start</h2>
       <ol>
         <li>Open the tool.</li>
-        <li>Load an <code>.rmc6f</code> or unified structure <code>.h5</code> file.</li>
+        <li>Load an <code>.rmc6f</code> file, a unified structure <code>.h5</code> file, or a Scatty spin or atom file (<code>.txt</code>).</li>
         <li>Choose a backend: WebGPU first, CPU FFT if WebGPU is unavailable.</li>
         <li>Set the reciprocal-space grid and press <strong>Compute Diffuse</strong>.</li>
         <li>Inspect the <strong>3D Slice Plane</strong>, <strong>2D Slice Map</strong>, and <strong>3D Isosurface</strong>.</li>
       </ol>
-      <pre><code>Input:  .rmc6f or unified structure .h5
+      <pre><code>Input:  .rmc6f, unified structure .h5, Scatty spins/atoms .txt, LAMMPS data
 Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.html)</code></pre>
       <figure>
         <img src="assets/diffuse_scattering_ui_annotated.png" alt="Diffuse scattering calculator interface after loading LiFeO2 and computing diffuse intensity" style="width:100%;border:1px solid #cbd5e1;border-radius:12px;">
@@ -108,6 +108,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
   <table>
     <tr><th>Control</th><th>Purpose</th></tr>
     <tr><td>Subtract avg</td><td>Subtract the coherent average-structure contribution so the result emphasizes diffuse scattering rather than the total intensity including Bragg-like contributions. Needs per-atom unit-cell references; it is switched off for LAMMPS data and for unified files without <code>atom_unit_cell</code>.</td></tr>
+    <tr><td>Magnetic</td><td>For spin configurations (Scatty spin files) with neutron radiation: nuclear only, magnetic only, or nuclear + magnetic scattering. Magnetic Q=0 and Paramagnet set the Q = 0 convention and the optional ideal-paramagnet subtraction; see <a href="diffuse_scattering_theory.html">Theory</a>.</td></tr>
     <tr><td>Normalize</td><td>Divide the intensity by the number of atoms (default; barn/sr per atom for neutrons), by the number of grid points (legacy), or not at all.</td></tr>
     <tr><td>Viewer scale</td><td>Choose <code>log10</code> or <code>linear</code> display scaling for the diffuse intensity.</td></tr>
     <tr><td>Base name</td><td>Controls the base filename used by the export actions.</td></tr>

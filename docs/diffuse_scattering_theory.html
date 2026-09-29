@@ -68,6 +68,28 @@
 </section>
 
 <section>
+  <h2>Magnetic Scattering</h2>
+  <p>For neutrons, magnetic moments add an amplitude for each Cartesian component &alpha;:</p>
+  <span class="eq">M<sub>&alpha;</sub>(<strong>Q</strong>) = &Sigma;<sub>j</sub> p f<sub>j</sub>(Q) &mu;<sub>j,&alpha;</sub> e<sup>i<strong>Q</strong>&middot;<strong>r</strong><sub>j</sub></sup>, &nbsp; p = &gamma;r<sub>e</sub>/2 = 0.26954&times;10<sup>&minus;12</sup> cm per &mu;<sub>B</sub></span>
+  <p>Only the part of the moment perpendicular to <strong>Q</strong> scatters:</p>
+  <span class="eq">I<sub>M</sub>(<strong>Q</strong>) = |&Delta;<strong>M</strong><sub>&perp;</sub>|&sup2; = |&Delta;<strong>M</strong>|&sup2; &minus; |<strong>Q&#770;</strong>&middot;&Delta;<strong>M</strong>|&sup2;</span>
+  <p>&Delta;<strong>M</strong> subtracts the same lattice-sum average as the nuclear amplitude when Subtract avg is on. Unpolarized neutrons measure I = I<sub>N</sub> + I<sub>M</sub>, with no nuclear&ndash;magnetic cross term.</p>
+  <p>The magnetic form factor is taken in the dipole approximation, f(Q) = &lang;j<sub>0</sub>&rang; + C<sub>2</sub>&lang;j<sub>2</sub>&rang; with s = Q/4&pi;:</p>
+  <ul>
+    <li>C<sub>2</sub> = (2 &minus; g<sub>J</sub>)/g<sub>J</sub> for rare-earth J multiplets, and about 0 for spin-only 3d ions.</li>
+    <li>&lang;j<sub>0</sub>&rang; and &lang;j<sub>2</sub>&rang; for 155 ions come from P. J. Brown's tables, and from Kobayashi, Nagao and Ito for 5d ions.</li>
+  </ul>
+  <table>
+    <tr><th>Control</th><th>Meaning</th></tr>
+    <tr><td>Magnetic</td><td>Nuclear only, magnetic only, or nuclear + magnetic. It is enabled when a spin configuration is loaded and the radiation is neutron.</td></tr>
+    <tr><td>Magnetic Q=0</td><td>The perpendicular projection is undefined at Q = 0. Choose 0, as in RMCProfile, or the orientational average (2/3)|&Delta;<strong>M</strong>|&sup2;, as in Scatty.</td></tr>
+    <tr><td>Paramagnet</td><td>Optionally subtracts the ideal paramagnet (2/3) &Sigma;<sub>j</sub> p&sup2;|&mu;<sub>j</sub>|&sup2; f<sub>j</sub>&sup2;, the scattering of uncorrelated spins (Scatty's TEMP_SUBTRACT). What remains is the spin-correlation signal.</td></tr>
+  </table>
+  <p>Averaging over nuclear cells removes only the ferromagnetic (k = 0) part of the average moment. Antiferromagnetic Bragg peaks, such as (&frac12; &frac12; &frac12;) of MnO, stay in the magnetic intensity.</p>
+  <p>With per-atom normalization and moments in &mu;<sub>B</sub>, I<sub>M</sub> is in barn sr<sup>&minus;1</sup> per atom. The results reproduce J. A. M. Paddison's Scatty to 10<sup>&minus;7</sup> of the peak for MnO and spin-ice configurations (<code>tests/fixtures/magnetic</code>).</p>
+</section>
+
+<section>
   <h2>Normalization</h2>
   <p>The <code>Normalize</code> control sets the divisor applied to the final intensity:</p>
   <table>

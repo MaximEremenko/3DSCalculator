@@ -24,8 +24,9 @@ The `docs/` directory contains the full documentation set
 ## Features
 
 - **Input formats**: RMCProfile `.rmc6f`, LAMMPS data files
-  (`.data` / `.lmp` / `.lammps`), and unified structure HDF5
-  (`.h5` / `.hdf5`), loaded via drag-and-drop or file picker.
+  (`.data` / `.lmp` / `.lammps`), unified structure HDF5
+  (`.h5` / `.hdf5`), and Scatty spin or atom files (`.txt`), loaded via
+  drag-and-drop or file picker.
 - **Compute backends**: the default, `wgpuNUFFT type-1 (WebGPU)`, evaluates
   the uniform `h,k,l` grid as a type-1 NUFFT on the GPU (bundled
   [wgpu-web](https://github.com/MaximEremenko/wgpuNUFFT)), with all phases
@@ -35,6 +36,11 @@ The `docs/` directory contains the full documentation set
   CPU f64 direct sum for small validation grids. If WebGPU is unavailable
   the app falls back to the CPU FFT backend automatically; large grids on
   the WebGPU paths run in chunks.
+- **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
+  intensity from spin configurations. It uses the perpendicular projection
+  |M⊥|², Brown ⟨j0⟩/⟨j2⟩ form factors for 155 ions, and optional
+  ideal-paramagnet subtraction. It is validated against J. A. M. Paddison's
+  Scatty on MnO and spin ice.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray
   (Waasmaier table), and electron scattering (neutral-atom tables:
   Lobato, Peng, Doyle, Weickenmeier, Kirkland; ionic Peng model with
