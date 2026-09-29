@@ -210,10 +210,11 @@
   }
 
   // One group per magnetic species: positions, in-cell offsets and the three
-  // Cartesian strengths p * mu_alpha (1e-12 cm) of its included atoms.
+  // Cartesian strengths p * mu_alpha (1e-12 cm) of its included atoms, where
+  // mu = species scale (muB) * the atom's base vector.
   function buildMagneticGroups(parsed, incSet, core) {
     const mag = parsed.magnetic;
-    const p = core.MAGNETIC_LENGTH;
+    const base = mag.vectors || mag.moments;
     return mag.species
       .map((species, s) => {
         const indices = [];
@@ -223,9 +224,10 @@
           if (incSet && !(incSet.has(raw) || incSet.has(normElem(raw)))) continue;
           indices.push(i);
         }
+        const p = core.MAGNETIC_LENGTH * (Number.isFinite(species.scale) ? species.scale : 1);
         const strengths = [0, 1, 2].map((a) => {
           const out = new Float64Array(indices.length * 2);
-          indices.forEach((i, j) => { out[j * 2] = p * mag.moments[i * 3 + a]; });
+          indices.forEach((i, j) => { out[j * 2] = p * base[i * 3 + a]; });
           return out;
         });
         return {

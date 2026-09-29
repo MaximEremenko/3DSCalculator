@@ -86,7 +86,7 @@ test("Scatty spin file: geometry, species and moments", () => {
   assert.equal(parsed.elements[0], "Mn");
   assert.equal(parsed.magneticOnly, true);
   for (let i = 0; i < parsed.atoms; i++) {
-    const m = parsed.magnetic.moments;
+    const m = parsed.magnetic.vectors;
     assert.ok(Math.abs(Math.hypot(m[i * 3], m[i * 3 + 1], m[i * 3 + 2]) - 5) < 1e-9);
   }
 });
@@ -149,7 +149,7 @@ test("RMCProfile's analytic magnetic case: one spin in a 2x1x1 cell", async () =
   const one = { j0: [0, 0, 0, 0, 0, 0, 0, 0, 1], j2: null, c2: 0 };
   const parsed = (spin) => ({
     file: "analytic", ...s, fca: Float64Array.from([2]),
-    magnetic: { species: [{ label: "m", formFactor: one }], speciesOfAtom: Int32Array.from([0]), moments: Float64Array.from(spin) },
+    magnetic: { species: [{ label: "m", formFactor: one }], speciesOfAtom: Int32Array.from([0]), vectors: Float64Array.from(spin) },
   });
   const axes = [[0.25], [0], [0]];
   const both = await compute(parsed([0, 1, 0]), axes, { mode: "both" }, { sub: true });

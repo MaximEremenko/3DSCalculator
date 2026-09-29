@@ -188,6 +188,26 @@
     const key = String(token), label = maps.labels.get(key) || key;
     return element(label) || maps.resolved.get(key) || "Type" + key;
   }
+  // Magnetic species (one per element with nonzero spins) for atom_style spin.
+  function spinStructure(atoms) {
+    if (!atoms.some(function (a) { return a.moment && (a.moment[0] || a.moment[1] || a.moment[2]); })) return null;
+    const table = global.MagneticFormFactors;
+    const species = [], index = new Map();
+    const speciesOfAtom = new Int32Array(atoms.length).fill(-1), vectors = new Float64Array(atoms.length * 3);
+    atoms.forEach(function (a, i) {
+      if (!a.moment || !(a.moment[0] || a.moment[1] || a.moment[2])) return;
+      if (!index.has(a.element)) {
+        const ion = table ? ((/\d/.test(a.element) && table.find(a.element)) || table.defaultIon(a.element)) : null;
+        index.set(a.element, species.length);
+        species.push({ label: a.element, element: a.element, ion: ion ? ion.ion : null, scale: 1, formFactorSource: ion ? "table" : "none",
+          formFactor: ion ? { j0: ion.j0, j2: ion.j2, c2: 0 } : { j0: [0, 0, 0, 0, 0, 0, 0, 0, 1], j2: null, c2: 0 } });
+      }
+      speciesOfAtom[i] = index.get(a.element);
+      vectors.set(a.moment, i * 3);
+    });
+    return { species: species, speciesOfAtom: speciesOfAtom, vectors: vectors, source: "LAMMPS atom_style spin (sp x unit vector, muB)", notes: [] };
+  }
+
   function parse(name, text) {
     const lines = String(text || "").split(/\r?\n/).map(clean), warnings = [];
     const atomCount = headerCount(lines, "atoms", true), typeCount = headerCount(lines, "atom types", true);
@@ -201,12 +221,17 @@
       const id = Number(p[0]);
       if (!Number.isInteger(id) || id < 0) throw new Error("LAMMPS data: invalid atom ID at line " + row.line);
       const point = [p[fields[1]], p[fields[1] + 1], p[fields[1] + 2]].map(function (v) { return number(v, "coordinate at line " + row.line) * unitInfo.factor; });
-      return { id: id, element: resolveType(p[fields[0]], maps), point: wrappedPoint(point, cell) };
+      // atom_style spin: spx spy spz (unit vector) and sp (magnitude, muB)
+      const moment = style === "spin" && p.length >= fields[1] + 7
+        ? [5, 6, 7].map(function (c) { return number(p[c], "spin at line " + row.line) * number(p[8], "spin magnitude at line " + row.line); })
+        : null;
+      return { id: id, element: resolveType(p[fields[0]], maps), point: wrappedPoint(point, cell), moment: moment };
     }).sort(function (a, b) { return a.id - b.id; });
     const n = atoms.length, x = new Float64Array(n), y = new Float64Array(n), z = new Float64Array(n), xa = new Float64Array(n), ya = new Float64Array(n), za = new Float64Array(n), dx = new Float64Array(n), dy = new Float64Array(n), dz = new Float64Array(n), elements = new Array(n);
     for (let i = 0; i < n; i++) { x[i] = xa[i] = atoms[i].point[0]; y[i] = ya[i] = atoms[i].point[1]; z[i] = za[i] = atoms[i].point[2]; elements[i] = atoms[i].element; }
     const Bp = reciprocal(cell), Bq = Bp.map(function (row) { return row.map(function (v) { return v * PI2; }); });
-    return { file: String(name || ""), atoms: n, super: [1, 1, 1], hasSupercell: false, cellDeg: [norm(cell.A), norm(cell.B), norm(cell.C), angle(cell.B, cell.C), angle(cell.A, cell.C), angle(cell.A, cell.B)], Bp: Bp, Bq: Bq, x: x, y: y, z: z, xa: xa, ya: ya, za: za, dx: dx, dy: dy, dz: dz, elements: elements, sourceFormat: "LAMMPS data (" + style + ", " + cell.kind + ")", sourceWarnings: warnings, lammps: { atomStyle: style, boxKind: cell.kind, units: unitInfo.style } };
+    const magnetic = spinStructure(atoms);
+    return { magnetic: magnetic, file: String(name || ""), atoms: n, super: [1, 1, 1], hasSupercell: false, cellDeg: [norm(cell.A), norm(cell.B), norm(cell.C), angle(cell.B, cell.C), angle(cell.A, cell.C), angle(cell.A, cell.B)], Bp: Bp, Bq: Bq, x: x, y: y, z: z, xa: xa, ya: ya, za: za, dx: dx, dy: dy, dz: dz, elements: elements, sourceFormat: "LAMMPS data (" + style + ", " + cell.kind + ")", sourceWarnings: warnings, lammps: { atomStyle: style, boxKind: cell.kind, units: unitInfo.style } };
   }
 
   global.LammpsDataReader = Object.freeze({ parse: parse });

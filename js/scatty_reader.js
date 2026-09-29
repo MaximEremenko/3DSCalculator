@@ -139,15 +139,19 @@
           keys.set(key, species.length);
           species.push({
             label: sf.ion ? `${sf.ion.ion.replace(/(\d+)$/, "$1+")}` : "custom",
+            element: sf.ion ? sf.ion.ion.replace(/\d+$/, "") : null,
             ion: sf.ion ? sf.ion.ion : null,
+            scale: 1,
             formFactor: sf.formFactor,
+            fileFormFactor: sf.formFactor,
+            formFactorSource: "file",
           });
         }
         return keys.get(key);
       });
       const speciesOfAtom = new Int32Array(n);
       entries.forEach((e, i) => { speciesOfAtom[i] = siteSpecies[e.site - 1]; });
-      parsed.magnetic = { species, speciesOfAtom, moments, source: "Scatty SPIN (components along a, b, c)" };
+      parsed.magnetic = { species, speciesOfAtom, vectors: moments, source: "Scatty SPIN (components along a, b, c)", notes: [] };
       // Without OCC lines Scatty treats the file as magnetic-only.
       parsed.magneticOnly = !occ.length && !entries.some((e) => e.element);
     }

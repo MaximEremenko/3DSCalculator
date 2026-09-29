@@ -12,6 +12,8 @@
       this.cellRad = [NaN, NaN, NaN, NaN, NaN, NaN];
       this.cols = 0;
       this.names = [];
+      this.types = null;
+      this.lattice = null;
     }
 
     parse(txt) {
@@ -23,6 +25,8 @@
       this.rows = this.parseRows(lines.slice(start));
       this.getSuper();
       this.getCell();
+      this.getTypes();
+      this.getLattice();
     }
 
     findHeader(lines) {
@@ -101,6 +105,25 @@
         .map((v) => parseInt(v, 10))
         .filter(Number.isInteger);
       this.super = nums.length >= 3 ? nums.slice(0, 3) : [1, 1, 1];
+    }
+
+    // "Atom types present: Gd Ru Si" gives RMCProfile's atom-type order.
+    getTypes() {
+      const line = this.header.find((v) => /Atom types present\s*:/i.test(v));
+      if (!line) return;
+      const types = line.split(":").slice(1).join(":").trim().split(/\s+/).filter(Boolean);
+      if (types.length) this.types = types;
+    }
+
+    // "Lattice vectors (Ang):" followed by three rows (the supercell vectors
+    // in the Cartesian frame RMCProfile used, and so the frame of its spins).
+    getLattice() {
+      const i = this.header.findIndex((v) => /Lattice vectors/i.test(v));
+      if (i < 0) return;
+      const rows = this.header.slice(i + 1, i + 4).map((v) => v.trim().split(/\s+/).map(Number));
+      if (rows.length === 3 && rows.every((r) => r.length >= 3 && r.slice(0, 3).every(Number.isFinite))) {
+        this.lattice = rows.map((r) => r.slice(0, 3));
+      }
     }
 
     getCell() {
@@ -321,6 +344,8 @@
         elements,
       }),
       cellDeg: r.cellDeg.slice(0, 6),
+      typeOrder: r.types,
+      fileLattice: r.lattice,
     };
   }
 

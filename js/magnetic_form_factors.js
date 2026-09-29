@@ -239,10 +239,24 @@
     return row ? entry(row) : null;
   }
 
+  // Typical magnetic ion of an element: 3+ for 4f and 5f ions, else 2+,
+  // falling back to any tabulated charge state.
+  function defaultIon(element) {
+    const key = ionKey(String(element || "").replace(/[\d+-]+$/, ""));
+    if (!key) return null;
+    const symbol = key.replace(/\d+$/, "");
+    const rows = IONS.filter((r) => r[0].replace(/\d+$/, "") === symbol);
+    if (!rows.length) return null;
+    const charge = /[45]f/.test(rows[rows.length - 1][1]) ? "3" : "2";
+    const row = rows.find((r) => r[0] === symbol + charge) || rows.find((r) => r[0] !== symbol + "0") || rows[0];
+    return entry(row);
+  }
+
   global.MagneticFormFactors = Object.freeze({
     ionKey,
     find,
     ions,
+    defaultIon,
     landeG,
     suggestedC2,
     coefficients,
