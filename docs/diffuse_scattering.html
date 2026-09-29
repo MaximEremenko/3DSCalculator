@@ -170,6 +170,7 @@ Output: diffuse volume + slices + exports (.h5/.dat/.json/.vtk/.cube/.csv/.svg/.
     <li><strong>Scale</strong>: controls the smoothing kernel size relative to the supercell-driven baseline.</li>
   </ul>
   <p>Lanczos is a good general-purpose smoothing filter. Chebyshev is more tunable and can produce stronger suppression of ringing depending on the chosen dB value.</p>
+  <p>Smoothing keeps the intensity level: the kernel has unit sum, and near the edges of the grid it is renormalized over the part that lies inside, so a flat pattern stays flat. Sharp features become lower and wider, with the same integrated intensity.</p>
 </section>
     <section id="backends">
       <h2>Backends And Scattering Choices</h2>
