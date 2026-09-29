@@ -41,7 +41,7 @@ The `docs/` directory contains the full documentation set
   the WebGPU paths run in chunks.
 - **Interface**: a Setup panel (structure, reciprocal grid, scattering,
   computation) with a pinned Compute button (`Ctrl+Enter`), three
-  maximizable views, and a View panel for slice, color, 3D and export
+  resizable and maximizable views, and a View panel for slice, color, 3D and export
   tools; light and dark themes; example structures one click away
   (including MnO spin configurations in Scatty and RMCProfile formats); a
   drawer layout for tablets and phones.

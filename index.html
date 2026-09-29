@@ -99,8 +99,10 @@ a{color:var(--accent)}
     "topbar  topbar  topbar  topbar"
     "sidebar plane3d iso     inspector"
     "sidebar slice2d slice2d inspector";
-  grid-template-columns:340px minmax(0,1fr) minmax(0,1fr) 304px;
-  grid-template-rows:var(--topbar-h) minmax(0,1fr) minmax(0,1.3fr);
+  --sidebar-w:340px;--inspector-w:304px;--col-a:1fr;--col-b:1fr;--row-a:1fr;--row-b:1.3fr;
+  position:relative;
+  grid-template-columns:var(--sidebar-w) minmax(0,var(--col-a)) minmax(0,var(--col-b)) var(--inspector-w);
+  grid-template-rows:var(--topbar-h) minmax(0,var(--row-a)) minmax(0,var(--row-b));
   gap:var(--gap);
   padding:0 var(--gap) var(--gap);
   background:var(--bg);
@@ -365,6 +367,22 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
 .empty-state.loaded .when-empty{display:none}
 .empty-card kbd{padding:1px 6px;border-radius:5px;border:1px solid var(--view-line);color:var(--view-text);font-size:11px}
 
+/* ===== Resize handles between panels and views ===== */
+.gutter{position:absolute;z-index:60;display:none;touch-action:none;outline:none}
+.gutter.on{display:block}
+.gutter.v{cursor:col-resize}
+.gutter.h{cursor:row-resize}
+.gutter::after{content:"";position:absolute;border-radius:2px;background:var(--accent);opacity:0;transition:opacity .15s}
+.gutter.v::after{top:0;bottom:0;left:5px;width:2px}
+.gutter.h::after{left:0;right:0;top:5px;height:2px}
+.gutter::before{content:"";position:absolute;border-radius:2px;background:var(--border-strong);opacity:.9;transition:background-color .15s}
+.gutter.v::before{top:50%;left:4px;width:4px;height:32px;margin-top:-16px}
+.gutter.h::before{left:50%;top:4px;width:32px;height:4px;margin-left:-16px}
+.gutter:hover::after,.gutter.active::after,.gutter:focus-visible::after{opacity:.75}
+.gutter:hover::before,.gutter.active::before,.gutter:focus-visible::before{background:var(--accent)}
+.dashboard.resizing{user-select:none}
+.dashboard.resizing .view,.dashboard.resizing .panel{pointer-events:none}
+
 /* ===== Drawer, backdrop, floating compute, mobile blocks ===== */
 .drawer-backdrop{display:none;position:fixed;inset:0;z-index:999;background:rgba(3,7,12,.55);backdrop-filter:blur(2px)}
 .fab-compute{display:none;position:fixed;right:16px;bottom:72px;z-index:800;width:56px;height:56px;border:0;border-radius:18px;align-items:center;justify-content:center;color:#fff;cursor:pointer;background:linear-gradient(180deg,var(--accent-hover),var(--accent));box-shadow:0 8px 24px rgba(0,0,0,.35),0 4px 12px rgba(61,155,255,.35);-webkit-tap-highlight-color:transparent;transition:transform .12s}
@@ -389,11 +407,11 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
 
 /* ===== Desktop sizes ===== */
 @media (min-width:1200px) and (max-width:1499px){
-  .dashboard{grid-template-columns:300px minmax(0,1fr) minmax(0,1fr) 276px}
+  .dashboard{--sidebar-w:300px;--inspector-w:276px}
   .brand-sub{display:none}
 }
 @media (min-width:2400px){
-  .dashboard{grid-template-columns:380px minmax(0,1fr) minmax(0,1fr) 340px}
+  .dashboard{--sidebar-w:380px;--inspector-w:340px}
   body{font-size:14px}
 }
 @media (min-aspect-ratio:32/9) and (min-width:1200px){
@@ -420,6 +438,7 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
   .topbar{position:sticky;top:0;z-index:200}
   .drawer-toggle{display:inline-flex}
   .view-actions [data-max]{display:none}
+  .gutter{display:none !important}
   .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:1000;width:min(440px,94vw);border-radius:0;border-width:0 1px 0 0;transform:translateX(-102%);transition:transform .25s ease;box-shadow:var(--shadow)}
   .drawer-open .sidebar{transform:translateX(0)}
   .dashboard.drawer-open~.drawer-backdrop{display:block}
@@ -771,6 +790,12 @@ html[data-theme="light"] .zoom-btn:hover{background:var(--accent-soft);border-co
 
     </div>
   </aside>
+
+  <!-- RESIZE HANDLES (desktop) -->
+  <div class="gutter v" data-gutter="side" role="separator" aria-orientation="vertical" aria-label="Resize the setup panel" tabindex="0" title="Drag to resize; double-click to reset"></div>
+  <div class="gutter v" data-gutter="col" role="separator" aria-orientation="vertical" aria-label="Resize the 3D views" tabindex="0" title="Drag to resize; double-click to reset"></div>
+  <div class="gutter h" data-gutter="row" role="separator" aria-orientation="horizontal" aria-label="Resize the 3D views and the 2D map" tabindex="0" title="Drag to resize; double-click to reset"></div>
+  <div class="gutter v" data-gutter="insp" role="separator" aria-orientation="vertical" aria-label="Resize the view panel" tabindex="0" title="Drag to resize; double-click to reset"></div>
 
   <!-- ISOSURFACE on tablet/phone (the plot moves here) -->
   <details class="mobile-iso-details" id="mobileIsoDetails">
@@ -2637,7 +2662,7 @@ bind();draw();
     dash.classList.remove("max-plane3d","max-iso","max-slice2d");
     if(area)dash.classList.add("max-"+area);
     document.querySelectorAll("[data-max]").forEach(function(b){b.title=area?"Restore":"Maximize";});
-    requestAnimationFrame(refreshViews);
+    requestAnimationFrame(function(){refreshViews();if(typeof placeGutters==="function")placeGutters();});
   }
   document.querySelectorAll("[data-max]").forEach(function(btn){
     btn.addEventListener("click",function(){setMaximized(dash.classList.contains("max-"+btn.dataset.max)?null:btn.dataset.max);});
@@ -2646,11 +2671,71 @@ bind();draw();
     if(e.key==="Escape"&&/\bmax-/.test(dash.className))setMaximized(null);
   });
 
+  /* Resizable views and side panels: drag the handles between them */
+  var gutters=Array.prototype.slice.call(document.querySelectorAll(".gutter")),LAYOUT_KEY="ds-layout",layout={};
+  try{layout=JSON.parse(localStorage.getItem(LAYOUT_KEY)||"{}")||{};}catch(_){layout={};}
+  function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+  function applyLayout(){
+    var st=dash.style;
+    if(layout.col>0){st.setProperty("--col-a",layout.col+"fr");st.setProperty("--col-b",(1-layout.col)+"fr");}else{st.removeProperty("--col-a");st.removeProperty("--col-b");}
+    if(layout.row>0){st.setProperty("--row-a",layout.row+"fr");st.setProperty("--row-b",(1-layout.row)+"fr");}else{st.removeProperty("--row-a");st.removeProperty("--row-b");}
+    if(layout.side>0)st.setProperty("--sidebar-w",layout.side+"px");else st.removeProperty("--sidebar-w");
+    if(layout.insp>0)st.setProperty("--inspector-w",layout.insp+"px");else st.removeProperty("--inspector-w");
+  }
+  function saveLayout(){try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout));}catch(_){}}
+  function rect(id){var el=$(id);return el&&el.getClientRects().length?el.getBoundingClientRect():null;}
+  function placeGutters(){
+    var wide=window.matchMedia("(min-width:1200px)").matches,d=dash.getBoundingClientRect(),P=rect("planeView"),I=rect("isoArea"),S=rect("slice2dPanel"),SB=rect("setupPanel"),IN=rect("inspector"),views=[P,I,S].filter(Boolean);
+    gutters.forEach(function(g){
+      var kind=g.dataset.gutter,box=null,top=P||I;
+      if(wide&&views.length){
+        if(kind==="col"&&P&&I)box=[(P.right+I.left)/2-6,P.top,12,P.height];
+        else if(kind==="row"&&S&&top)box=[S.left,(Math.max(P?P.bottom:0,I?I.bottom:0)+S.top)/2-6,S.width,12];
+        else if(kind==="side"&&SB)box=[(SB.right+Math.min.apply(null,views.map(function(r){return r.left;})))/2-6,SB.top,12,SB.height];
+        else if(kind==="insp"&&IN)box=[(Math.max.apply(null,views.map(function(r){return r.right;}))+IN.left)/2-6,IN.top,12,IN.height];
+      }
+      if(box){g.style.left=(box[0]-d.left)+"px";g.style.top=(box[1]-d.top)+"px";g.style.width=box[2]+"px";g.style.height=box[3]+"px";}
+      g.classList.toggle("on",!!box);
+    });
+  }
+  function dragValue(kind,x,y){
+    var P=rect("planeView"),I=rect("isoArea"),S=rect("slice2dPanel"),SB=rect("setupPanel"),IN=rect("inspector");
+    if(kind==="col"&&P&&I)return clamp((x-P.left)/Math.max(1,I.right-P.left),0.25,0.75);
+    if(kind==="row"&&S&&(P||I)){var t=(P||I).top;return clamp((y-t)/Math.max(1,S.bottom-t),0.2,0.8);}
+    if(kind==="side"&&SB)return Math.round(clamp(x-SB.left,240,Math.max(260,Math.min(640,window.innerWidth*0.4))));
+    if(kind==="insp"&&IN)return Math.round(clamp(IN.right-x,240,Math.max(260,Math.min(560,window.innerWidth*0.35))));
+    return null;
+  }
+  function setLayout(kind,v){if(v==null)return;layout[kind]=v;applyLayout();}
+  var frame=0;
+  function relayout(full){if(frame)return;frame=requestAnimationFrame(function(){frame=0;placeGutters();if(full)refreshViews();else if(typeof draw==="function")draw();});}
+  gutters.forEach(function(g){
+    var kind=g.dataset.gutter;
+    g.addEventListener("pointerdown",function(e){
+      if(e.button!==0)return;
+      e.preventDefault();g.setPointerCapture(e.pointerId);g.classList.add("active");dash.classList.add("resizing");
+      function move(ev){setLayout(kind,dragValue(kind,ev.clientX,ev.clientY));relayout(false);}
+      function up(){g.classList.remove("active");dash.classList.remove("resizing");g.removeEventListener("pointermove",move);g.removeEventListener("pointerup",up);g.removeEventListener("pointercancel",up);saveLayout();relayout(true);}
+      g.addEventListener("pointermove",move);g.addEventListener("pointerup",up);g.addEventListener("pointercancel",up);
+    });
+    g.addEventListener("dblclick",function(){delete layout[kind];applyLayout();saveLayout();relayout(true);});
+    g.addEventListener("keydown",function(e){
+      var sign=(e.key==="ArrowRight"||e.key==="ArrowDown")?1:(e.key==="ArrowLeft"||e.key==="ArrowUp")?-1:0;
+      if(!sign)return;
+      e.preventDefault();
+      var r=g.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,px=(kind==="row"?0:sign*24),py=(kind==="row"?sign*24:0);
+      setLayout(kind,dragValue(kind,cx+px,cy+py));saveLayout();relayout(true);
+    });
+  });
+  applyLayout();
+  window.addEventListener("resize",function(){relayout(false);});
+
   /* Keep the plots sized to their panels */
   if(window.ResizeObserver){
-    var timer=0,ro=new ResizeObserver(function(){clearTimeout(timer);timer=setTimeout(refreshViews,120);});
-    ["planeView","isoArea","slice2dPanel"].forEach(function(id){var el=$(id);if(el)ro.observe(el);});
+    var timer=0,ro=new ResizeObserver(function(){placeGutters();clearTimeout(timer);timer=setTimeout(refreshViews,120);});
+    ["planeView","isoArea","slice2dPanel","setupPanel","inspector"].forEach(function(id){var el=$(id);if(el)ro.observe(el);});
   }
+  requestAnimationFrame(placeGutters);
 
   /* The slice scale also becomes the default for the next compute */
   var scale=$("scale"),defScale=$("defScale");
