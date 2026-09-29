@@ -202,7 +202,64 @@
     }
   }
 
-  function buildProfile(parsed, scatteringCfg) {
+  function needFormFactors() {
+    if (!global.MagneticFormFactors) {
+      throw new Error("MagneticFormFactors missing. Load ./js/magnetic_form_factors.js first.");
+    }
+    return global.MagneticFormFactors;
+  }
+
+  // One group per magnetic species: positions, in-cell offsets and the three
+  // Cartesian strengths p * mu_alpha (1e-12 cm) of its included atoms.
+  function buildMagneticGroups(parsed, incSet, core) {
+    const mag = parsed.magnetic;
+    const p = core.MAGNETIC_LENGTH;
+    return mag.species
+      .map((species, s) => {
+        const indices = [];
+        for (let i = 0; i < parsed.atoms; i++) {
+          if (mag.speciesOfAtom[i] !== s) continue;
+          const raw = String(parsed.elements[i] || "").trim();
+          if (incSet && !(incSet.has(raw) || incSet.has(normElem(raw)))) continue;
+          indices.push(i);
+        }
+        const strengths = [0, 1, 2].map((a) => {
+          const out = new Float64Array(indices.length * 2);
+          indices.forEach((i, j) => { out[j * 2] = p * mag.moments[i * 3 + a]; });
+          return out;
+        });
+        return {
+          label: species.label,
+          formFactor: species.formFactor,
+          count: indices.length,
+          src: packTripletsByIndex(parsed.x, parsed.y, parsed.z, indices),
+          srcD: packTripletsByIndex(parsed.dx, parsed.dy, parsed.dz, indices),
+          strengths,
+        };
+      })
+      .filter((g) => g.count > 0);
+  }
+
+  function formFactorValues(group, qMag) {
+    const ff = needFormFactors();
+    const out = new Float64Array(qMag.length);
+    for (let i = 0; i < qMag.length; i++) out[i] = ff.evaluate(group.formFactor, qMag[i]);
+    return out;
+  }
+
+  // dst -= L * avg / N_cell (interleaved complex): the average-structure term.
+  function subtractAverage(dst, L, avg, mInv) {
+    for (let i = 0; i < dst.length / 2; i++) {
+      const lr = L[i * 2];
+      const li = L[i * 2 + 1];
+      const ar = avg[i * 2];
+      const ai = avg[i * 2 + 1];
+      dst[i * 2] -= (lr * ar - li * ai) * mInv;
+      dst[i * 2 + 1] -= (lr * ai + li * ar) * mInv;
+    }
+  }
+
+  function buildProfile(parsed, scatteringCfg, magneticCfg) {
     const core = needCore();
     const cfg = normalizeScatteringConfig(scatteringCfg);
     const profile = {
@@ -241,6 +298,9 @@
       }
     }
     profile.includedAtomCount = includedIndices.length;
+    if (parsed.magnetic && magneticCfg && magneticCfg.mode && magneticCfg.mode !== "nuclear") {
+      profile.magnetic = buildMagneticGroups(parsed, incSet, core);
+    }
 
     if (cfg.type === "neutron" && cfg.model === "fast") {
       profile.engine = "neutron_fast";
@@ -337,11 +397,31 @@
     // Only for backends that stay accurate on very small grids: the f32
     // type-3 paths are not, so they keep the full-grid A_delta.
     const deltaOnLattice = !!args.deltaOnLattice;
+    // Scattering mode: "nuclear", "magnetic" or "both" (unpolarized neutrons:
+    // I = I_N + I_M with no nuclear-magnetic cross term).
+    const mode = String((args.magnetic && args.magnetic.mode) || "nuclear");
+    const withNuclear = mode !== "magnetic";
+    const withMagnetic = mode !== "nuclear";
+    const qZeroAverage = !!(args.magnetic && args.magnetic.qZero === "average");
+    // Subtract the ideal paramagnet (2/3) sum_j p^2 |mu_j|^2 f_j(Q)^2, the
+    // uncorrelated-spin intensity (Scatty's TEMP_SUBTRACT).
+    const paramagnet = !!(args.magnetic && args.magnetic.subtractParamagnet);
     if (typeof runType3 !== "function") {
       throw new Error("computeIntensity requires runType3 callback");
     }
+    const status = (msg) => {
+      if (typeof onStatus === "function") onStatus(msg);
+    };
 
-    const profile = args.profile || buildProfile(parsed, args.scattering);
+    if (withMagnetic && normalizeScatteringConfig((args.profile && args.profile.config) || args.scattering).type !== "neutron") {
+      throw new Error("Magnetic scattering is defined for neutrons; set the radiation to neutron.");
+    }
+    const profile = args.profile || buildProfile(parsed, args.scattering, args.magnetic);
+    if (withMagnetic) {
+      if (!profile.magnetic || !profile.magnetic.length) {
+        throw new Error("Magnetic scattering needs magnetic moments; load a spin configuration.");
+      }
+    }
     const grid = h.length * k.length * l.length;
     const chunkSize = Math.max(
       1,
@@ -354,6 +434,7 @@
       a: 0,
       aavg: 0,
       adelta: 0,
+      magnetic: 0,
       finalize: 0,
     };
     // Average structure amplitude: L(h) * A_delta(h) / N_cell, where L is the
@@ -380,14 +461,19 @@
     const mInv = 1 / cellCount;
     profile.averageCellCount = sub ? cellCount : null;
     // Largest source count, so grid-aware backends can share one plan.
-    const pointCapacity = profile.engine === "neutron_fast"
-      ? parsed.atoms
-      : Math.max(1, ...profile.groups.map((g) => g.count));
+    const counts = [1];
+    if (withNuclear) {
+      counts.push(profile.engine === "neutron_fast" ? parsed.atoms : Math.max(1, ...profile.groups.map((g) => g.count)));
+    }
+    if (withMagnetic) counts.push(...profile.magnetic.map((g) => g.count));
+    const pointCapacity = Math.max(...counts);
 
     // L vanishes off integer h on axes whose steps are commensurate with the
-    // supercell, so A_delta is only needed on that (small) sub-grid.
-    let deltaSub = null;
+    // supercell, so A_delta (nuclear and magnetic) is only needed on that
+    // (small) sub-grid.
     let deltaIndex = null;
+    let deltaSub = null;
+    let magDeltaSub = null;
     if (sub && deltaOnLattice) {
       const axes = [h, k, l];
       const supercell = parsed.super.map((v) => Math.max(1, Math.round(Number(v) || 1)));
@@ -398,15 +484,16 @@
       if (keep.some((idx, d) => idx.length < axes[d].length)) {
         const [hs, ks, ls] = keep.map((idx, d) => idx.map((i) => axes[d][i]));
         const n = hs.length * ks.length * ls.length;
-        deltaIndex = { nk: ks.length, nl: ls.length };
+        deltaIndex = { nk: ks.length, nl: ls.length, points: n };
         ["h", "k", "l"].forEach((name, d) => {
           const pos = new Int32Array(axes[d].length).fill(-1);
           keep[d].forEach((i, j) => { pos[i] = j; });
           deltaIndex[name] = pos;
         });
-        deltaSub = new Float64Array(n * 2);
+        deltaSub = withNuclear ? new Float64Array(n * 2) : null;
+        magDeltaSub = withMagnetic ? [0, 1, 2].map(() => new Float64Array(n * 2)) : null;
         if (n > 0) {
-          if (typeof onStatus === "function") onStatus(`Computing Adelta(hkl) on ${n} lattice points ...`);
+          status(`Computing Adelta(hkl) on ${n} lattice points ...`);
           const trgSub = gridAware ? null : core.targetsChunk(hs, ks, ls, Bq, 0, n);
           const gridSub = { h: hs, k: ks, l: ls, Bq, start: 0, count: n };
           const transformSub = async (sourcesPacked, strengths) =>
@@ -418,20 +505,29 @@
                 onStageTiming
               )
             ).out;
+          const qMagSub = core.qMagnitudesChunk(hs, ks, ls, Bq, 0, n);
           const tAd = nowMs();
-          if (profile.engine === "neutron_fast") {
+          if (withNuclear && profile.engine === "neutron_fast") {
             deltaSub.set(await transformSub(profile.srcD, profile.cAtoms));
-          } else {
-            const qMagSub = core.qMagnitudesChunk(hs, ks, ls, Bq, 0, n);
+          } else if (withNuclear) {
             for (const g of profile.groups) {
               accumulateScaledComplex(deltaSub, await transformSub(g.srcD, g.ones), profile.evalGroupCoeffs(g, qMagSub));
+            }
+          }
+          if (withMagnetic) {
+            for (const g of profile.magnetic) {
+              const ff = formFactorValues(g, qMagSub);
+              for (let a = 0; a < 3; a++) {
+                accumulateScaledComplex(magDeltaSub[a], await transformSub(g.srcD, g.strengths[a]), ff);
+              }
             }
           }
           timings.adelta += nowMs() - tAd;
         }
       }
     }
-    profile.deltaPoints = deltaSub ? deltaSub.length / 2 : null;
+    profile.deltaPoints = deltaIndex ? deltaIndex.points : null;
+    const latticeDelta = !!deltaIndex;
     let min = Infinity;
     let max = -Infinity;
 
@@ -449,81 +545,109 @@
             onStageTiming
           )
         ).out;
+      const gather = (values) => gatherSubGrid(values, deltaIndex, start, count, k.length, l.length);
       const chunkTag = totalChunks > 1 ? ` (${chunk + 1}/${totalChunks})` : "";
-      let q = null;
+      const fullDelta = sub && !latticeDelta;
+      let qMag = null;
+      const magnitudes = () =>
+        qMag || (qMag = trg ? makeQMagnitudes(trg) : core.qMagnitudesChunk(h, k, l, Bq, start, count));
       let qa = null;
-      let qd = null;
+      let mm = null;
 
       if (sub) {
         const tAa = nowMs();
         qa = core.laueChunk(laue.h, laue.k, laue.l, start, count);
-        if (deltaSub) qd = gatherSubGrid(deltaSub, deltaIndex, start, count, k.length, l.length);
         timings.aavg += nowMs() - tAa;
       }
-      const fullDelta = sub && !deltaSub;
 
-      if (profile.engine === "neutron_fast") {
-        if (typeof onStatus === "function") onStatus(`Computing A(hkl)${chunkTag} ...`);
-        const tA = nowMs();
-        q = await transform(profile.src, profile.cAtoms);
-        timings.a += nowMs() - tA;
-
-        if (fullDelta) {
-          if (typeof onStatus === "function") {
-            onStatus(`Computing Adelta(hkl)${chunkTag} ...`);
-          }
-          const tAd = nowMs();
-          qd = await transform(profile.srcD, profile.cAtoms);
-          timings.adelta += nowMs() - tAd;
-        }
-      } else {
-        const qMag = trg ? makeQMagnitudes(trg) : core.qMagnitudesChunk(h, k, l, Bq, start, count);
-        q = new Float64Array(count * 2);
-        if (fullDelta) qd = new Float64Array(count * 2);
-
-        for (let gi = 0; gi < profile.groups.length; gi++) {
-          const g = profile.groups[gi];
-          const gTag =
-            profile.groups.length > 1
-              ? ` [${gi + 1}/${profile.groups.length} ${g.element}]`
-              : "";
-          const coeff = profile.evalGroupCoeffs(g, qMag);
-
-          if (typeof onStatus === "function") {
-            onStatus(`Computing A(hkl)${chunkTag}${gTag} ...`);
-          }
+      if (withNuclear) {
+        let q = null;
+        let qd = latticeDelta ? gather(deltaSub) : null;
+        if (profile.engine === "neutron_fast") {
+          status(`Computing A(hkl)${chunkTag} ...`);
           const tA = nowMs();
-          accumulateScaledComplex(q, await transform(g.src, g.ones), coeff);
+          q = await transform(profile.src, profile.cAtoms);
           timings.a += nowMs() - tA;
 
           if (fullDelta) {
-            if (typeof onStatus === "function") {
-              onStatus(`Computing Adelta(hkl)${chunkTag}${gTag} ...`);
-            }
+            status(`Computing Adelta(hkl)${chunkTag} ...`);
             const tAd = nowMs();
-            accumulateScaledComplex(qd, await transform(g.srcD, g.ones), coeff);
+            qd = await transform(profile.srcD, profile.cAtoms);
             timings.adelta += nowMs() - tAd;
           }
+        } else {
+          q = new Float64Array(count * 2);
+          if (fullDelta) qd = new Float64Array(count * 2);
+
+          for (let gi = 0; gi < profile.groups.length; gi++) {
+            const g = profile.groups[gi];
+            const gTag =
+              profile.groups.length > 1
+                ? ` [${gi + 1}/${profile.groups.length} ${g.element}]`
+                : "";
+            const coeff = profile.evalGroupCoeffs(g, magnitudes());
+
+            status(`Computing A(hkl)${chunkTag}${gTag} ...`);
+            const tA = nowMs();
+            accumulateScaledComplex(q, await transform(g.src, g.ones), coeff);
+            timings.a += nowMs() - tA;
+
+            if (fullDelta) {
+              status(`Computing Adelta(hkl)${chunkTag}${gTag} ...`);
+              const tAd = nowMs();
+              accumulateScaledComplex(qd, await transform(g.srcD, g.ones), coeff);
+              timings.adelta += nowMs() - tAd;
+            }
+          }
         }
+
+        status(`Finalizing intensity${chunkTag} ...`);
+        const tFin = nowMs();
+        mm = core.accumulateIntensityChunk(I, start, count, q, qa, qd, mInv, sub);
+        timings.finalize += nowMs() - tFin;
       }
 
-      if (typeof onStatus === "function") {
-        onStatus(`Finalizing intensity${chunkTag} ...`);
+      if (withMagnetic) {
+        const tM = nowMs();
+        const acc = core.magneticAccumulator(count);
+        const ffs = profile.magnetic.map((g) => formFactorValues(g, magnitudes()));
+        for (let a = 0; a < 3; a++) {
+          status(`Computing M${"xyz"[a]}(hkl)${chunkTag} ...`);
+          const dm = new Float64Array(count * 2);
+          for (let gi = 0; gi < profile.magnetic.length; gi++) {
+            const g = profile.magnetic[gi];
+            accumulateScaledComplex(dm, await transform(g.src, g.strengths[a]), ffs[gi]);
+          }
+          if (sub) {
+            let avg;
+            if (latticeDelta) {
+              avg = gather(magDeltaSub[a]);
+            } else {
+              avg = new Float64Array(count * 2);
+              for (let gi = 0; gi < profile.magnetic.length; gi++) {
+                const g = profile.magnetic[gi];
+                accumulateScaledComplex(avg, await transform(g.srcD, g.strengths[a]), ffs[gi]);
+              }
+            }
+            subtractAverage(dm, qa, avg, mInv);
+          }
+          core.accumulateMagneticComponent(acc, dm, a, h, k, l, Bq, start, count);
+        }
+        let offset = null;
+        if (paramagnet) {
+          offset = new Float64Array(count);
+          profile.magnetic.forEach((g, gi) => {
+            let w = 0;
+            for (const st of g.strengths) for (let j = 0; j < g.count; j++) w += st[j * 2] ** 2;
+            for (let i = 0; i < count; i++) offset[i] += (2 / 3) * w * ffs[gi][i] ** 2;
+          });
+        }
+        mm = core.finishMagneticChunk(I, start, count, acc, qZeroAverage, withNuclear, offset);
+        timings.magnetic += nowMs() - tM;
       }
-      const tFin = nowMs();
-      const mmChunk = core.accumulateIntensityChunk(
-        I,
-        start,
-        count,
-        q,
-        qa,
-        qd,
-        mInv,
-        sub
-      );
-      timings.finalize += nowMs() - tFin;
-      if (mmChunk.min < min) min = mmChunk.min;
-      if (mmChunk.max > max) max = mmChunk.max;
+
+      if (mm.min < min) min = mm.min;
+      if (mm.max > max) max = mm.max;
     }
 
     return {

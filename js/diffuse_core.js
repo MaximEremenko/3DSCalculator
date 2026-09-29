@@ -269,6 +269,67 @@
     return lo;
   }
 
+  // Neutron magnetic scattering length per Bohr magneton, gamma r_e / 2, in
+  // 1e-12 cm (CODATA 2018: gamma = 1.91304273, r_e = 2.8179403262 fm); its
+  // square is 0.0726529 barn, as in Scatty (RMCProfile uses 0.269536639).
+  const MAGNETIC_LENGTH = (1.91304273 * 2.8179403262) / 2 / 10;
+
+  // Empty accumulators for |dM|^2 and qhat.dM over a chunk.
+  function magneticAccumulator(count) {
+    return { t: new Float64Array(count), s: new Float64Array(count * 2), zero: new Uint8Array(count) };
+  }
+
+  // Adds Cartesian component `alpha` of a magnetic fluctuation amplitude dm
+  // (interleaved complex) to |dM|^2 and to qhat.dM for a run of the grid.
+  function accumulateMagneticComponent(acc, dm, alpha, h, k, l, Bq, start, count) {
+    const nk = k.length;
+    const nl = l.length;
+    const plane = nk * nl;
+    for (let i = 0; i < count; i++) {
+      const linear = start + i;
+      const ih = Math.floor(linear / plane);
+      const rem = linear - ih * plane;
+      const ik = Math.floor(rem / nl);
+      const il = rem - ik * nl;
+      const hv = h[ih];
+      const kv = k[ik];
+      const lv = l[il];
+      const qx = hv * Bq[0][0] + kv * Bq[1][0] + lv * Bq[2][0];
+      const qy = hv * Bq[0][1] + kv * Bq[1][1] + lv * Bq[2][1];
+      const qz = hv * Bq[0][2] + kv * Bq[1][2] + lv * Bq[2][2];
+      const qn = Math.hypot(qx, qy, qz);
+      const w = qn > 1e-12 ? (alpha === 0 ? qx : alpha === 1 ? qy : qz) / qn : 0;
+      if (!(qn > 1e-12)) acc.zero[i] = 1;
+      const re = dm[i * 2];
+      const im = dm[i * 2 + 1];
+      acc.t[i] += re * re + im * im;
+      acc.s[i * 2] += w * re;
+      acc.s[i * 2 + 1] += w * im;
+    }
+  }
+
+  // Writes, or with `add` adds, |dM_perp|^2 = |dM|^2 - |qhat.dM|^2 into out.
+  // At Q = 0 the direction is undefined: 0 as in RMCProfile, or with
+  // `qZeroAverage` the orientational average (2/3)|dM|^2 as in Scatty.
+  // `offset` (optional, per point) is subtracted wherever the magnetic
+  // intensity is defined, e.g. the ideal-paramagnet term.
+  function finishMagneticChunk(out, start, count, acc, qZeroAverage, add, offset) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < count; i++) {
+      const defined = !acc.zero[i] || qZeroAverage;
+      let perp = acc.zero[i]
+        ? (qZeroAverage ? (2 / 3) * acc.t[i] : 0)
+        : Math.max(0, acc.t[i] - acc.s[i * 2] ** 2 - acc.s[i * 2 + 1] ** 2);
+      if (offset && defined) perp -= offset[i];
+      const v = add ? out[start + i] + perp : perp;
+      out[start + i] = v;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    return { min, max };
+  }
+
   function accumulateIntensityChunk(
     out,
     start,
@@ -315,6 +376,10 @@
     laueAxis,
     laueChunk,
     cellOrigin,
+    MAGNETIC_LENGTH,
+    magneticAccumulator,
+    accumulateMagneticComponent,
+    finishMagneticChunk,
     accumulateIntensityChunk,
   });
 })(typeof window !== "undefined" ? window : globalThis);
