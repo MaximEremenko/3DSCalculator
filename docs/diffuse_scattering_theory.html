@@ -118,6 +118,13 @@
   <p>For broad diffuse problems, <code>log10</code> is usually the more informative visualization setting.</p>
 </section>
 
+<section id="laue">
+  <h2>Laue Symmetrization</h2>
+  <p>A finite configuration breaks the crystal's symmetry through its speckle and finite size. For a Laue class G, a group of |G| operations on (h, k, l) that includes the inversion, the symmetrized intensity is</p>
+  <p>I<sub>sym</sub>(<strong>h</strong>) = (1/n) &Sigma;<sub>g</sub> I(g<strong>h</strong>),</p>
+  <p>the sum running over the n &le; |G| operations whose g<strong>h</strong> falls on the grid, with masked points left out. The classes and their operations are those of Scatty; the trigonal and hexagonal ones act on hexagonal axes with i = &minus;h &minus; k. An operation keeps |<strong>Q</strong>| only when the reciprocal metric G* satisfies M<sup>T</sup>G*M = G*, which the calculator checks. Scattering from real scattering lengths and moments is already centrosymmetric, I(&minus;<strong>h</strong>) = I(<strong>h</strong>), so the class &minus;1 changes little.</p>
+</section>
+
 <section id="comparison">
   <h2>Comparison With Data</h2>
   <p>A calculation I<sub>c</sub> is compared with measured or reference intensities I on the grid points the two share. The model</p>

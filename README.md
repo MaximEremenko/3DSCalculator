@@ -70,8 +70,9 @@ The `docs/` directory contains the full documentation set
   Lobato, Peng, Doyle, Weickenmeier, Kirkland; ionic Peng model with
   user-specified valences).
 - **Calculation options**: average-lattice subtraction, normalization
-  controls, optional 3D smoothing (Lanczos or Chebyshev filter), and an
-  experimental per-element filter.
+  controls, Laue symmetrization (Scatty's 12 Laue classes), optional 3D
+  smoothing (Lanczos or Chebyshev filter), and an experimental per-element
+  filter.
 - **Visualization**: interactive Plotly 3D isosurface and 3D slice-plane
   views, plus a 2D slice heatmap with three slice modes — axis-aligned
   slices, arbitrary normal-plane slices, and volume-average slabs.
