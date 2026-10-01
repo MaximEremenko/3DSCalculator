@@ -1,44 +1,45 @@
 <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Diffuse Scattering Troubleshooting</title>
-
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; line-height: 1.6; color: #1f2937; background: #f8fafc; }
-    header, main, footer, nav { max-width: 960px; margin: 0 auto; }
-    header { margin-bottom: 1.5rem; }
-    nav { margin-bottom: 1.5rem; padding: 0.85rem 1rem; background: #e2e8f0; border-radius: 10px; }
-    nav a { margin-right: 1rem; font-weight: 600; }
-    section { background: white; padding: 1.25rem 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-    h1, h2, h3 { color: #0f172a; }
-    code { background: #eef2ff; padding: 0 4px; border-radius: 4px; }
-    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 10px; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #cbd5e1; padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; }
-    th { background: #e2e8f0; }
-    .callout { padding: 0.9rem 1rem; border-left: 4px solid #1d4ed8; background: #eff6ff; border-radius: 8px; }
-    .small { font-size: 0.95rem; color: #475569; }
-  </style>
-
-    </head>
-    <body>
-      <header>
-        <h1>Diffuse Scattering Troubleshooting</h1>
-        <p class="small">Documentation for the browser-based RMC6f diffuse-scattering calculator.</p>
-      </header>
-      <nav>
-        <a href="index.html">Docs Home</a>
-        <a href="diffuse_scattering.html">Guide</a>
-        <a href="diffuse_scattering_examples.html">Examples</a>
-        <a href="diffuse_scattering_theory.html">Theory</a>
-        <a href="diffuse_scattering_supplementary.html">Supplementary</a>
-        <a href="diffuse_scattering_bibliography.html">Bibliography</a>
-        <a href="diffuse_scattering_troubleshooting.html">Troubleshooting</a>
-        <a href="../index.html">Open Tool</a>
-      </nav>
-      <main>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffuse Scattering Troubleshooting · 3DSCalculator</title>
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e2d8c8'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%232a2825'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%232a2825' stroke-width='2' opacity='.8'/%3E%3C/svg%3E">
+<script>try{if(localStorage.getItem("ds-theme")==="light")document.documentElement.setAttribute("data-theme","light");}catch(_){}</script>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="3DSCalculator documentation">
+    <span class="brand-logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="6" opacity=".85"/><circle cx="12" cy="12" r="10" opacity=".55"/><circle cx="18" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="6" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg></span>
+    <span class="brand-name">3DSCalculator</span>
+    <span class="brand-sub">Documentation</span>
+  </a>
+  <nav class="docnav" aria-label="Documentation pages">
+    <a href="index.html">Overview</a>
+    <a href="diffuse_scattering.html">Guide</a>
+    <a href="diffuse_scattering_examples.html">Examples</a>
+    <a href="diffuse_scattering_theory.html">Theory</a>
+    <a href="diffuse_scattering_supplementary.html">Supplementary</a>
+    <a href="diffuse_scattering_bibliography.html">Bibliography</a>
+    <a href="diffuse_scattering_troubleshooting.html" aria-current="page">Troubleshooting</a>
+  </nav>
+  <div class="top-actions">
+    <a class="btn" href="../index.html"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>Open<span class="hide-sm"> the calculator</span></span></a>
+    <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch between the light and dark themes" title="Light or dark theme">
+      <svg class="i-sun" aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="i-moon" aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+<div class="page">
+  <div class="doc">
+    <header class="page-head">
+      <h1>Diffuse Scattering Troubleshooting</h1>
+      <p class="lead">Common problems, and what to try first.</p>
+    </header>
+    <main>
 
 <section>
   <h2>Start With The Smallest Stable Example</h2>
@@ -112,10 +113,12 @@
   <h2>Exports</h2>
   <p>If a plot export is disabled, compute the diffuse volume first. Slice and 3D export actions are tied to available results and active views.</p>
 </section>
-
-      </main>
-      <footer class="small">
-        <p>Documentation for the RMC6f Diffuse Scattering Calculator.</p>
-      </footer>
-    </body>
-    </html>
+    </main>
+    <footer class="page-foot">
+      <p>3DSCalculator: diffuse scattering from atomistic models, computed in the browser. <a href="https://github.com/MaximEremenko/3DSCalculator">Source on GitHub</a>.</p>
+    </footer>
+  </div>
+</div>
+<script src="docs.js"></script>
+</body>
+</html>
