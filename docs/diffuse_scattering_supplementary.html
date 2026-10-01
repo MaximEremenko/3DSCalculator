@@ -47,7 +47,7 @@
 <section>
   <h2>Backend Stack</h2>
   <ul>
-    <li><strong>wgpuNUFFT / wgpu-web</strong> — Maksim Eremenko's Rust/WebGPU NUFFT library, bundled as <code>js/wgpu_web.js</code> (wgpu-web 0.2.0). It runs the default <code>wgpuNUFFT type-1 (WebGPU)</code> backend: each uniform <code>h,k,l</code> grid becomes a type-1 transform of wrapped atom coordinates with pre-phased strengths (<code>js/type1_grid.js</code>, <code>js/wgpu_type1.js</code>).</li>
+    <li><strong>wgpuNUFFT / wgpu-web</strong> — Maksim Eremenko's Rust/WebGPU NUFFT library, bundled as <code>js/wgpu_web.js</code> (wgpu-web 0.3.0). It runs the default <code>wgpuNUFFT type-1 (WebGPU)</code> backend: each uniform <code>h,k,l</code> grid becomes a type-1 transform of wrapped atom coordinates with pre-phased strengths (<code>js/type1_grid.js</code>, <code>js/wgpu_type1.js</code>).</li>
     <li><strong>WebGPU-FFT</strong> — Maksim Eremenko's WebGPU FFT library used by the type-3 WebGPU path and WebGPU smoothing.</li>
     <li><strong>WebGPU-NUFFT</strong> — type-3 NUFFT implementation and WebGPU bridge. In the UI this appears as <code>Type-3 + webgpufft (WebGPU)</code>, <code>type3NufftCpu (CPU FFT)</code>, <code>type3NufftCpuDirect (CPU f64 NUFFT)</code>, and <code>Exact sum (CPU f64, small grids)</code> (the library's <code>type3NufftDirectSum</code>).</li>
     <li><strong>Plotly.js</strong> — interactive 3D rendering for slice-plane and isosurface views.</li>

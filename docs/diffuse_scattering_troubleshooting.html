@@ -56,6 +56,7 @@
   <h2>Results Differ Between Backends</h2>
   <ul>
     <li>The WebGPU FFT/NUFFT stack and the CPU FFT path use <code>fp32</code> arithmetic and do not provide <code>fp64</code> execution.</li>
+    <li>An upsampling below 2 amplifies that rounding, so the <strong>wgpuNUFFT type-1</strong> backend refuses it with a tight tolerance (for example upsampling 1.25 at 1e-6) rather than return a less accurate result. Keep its preset (upsampling 2, tolerance 1e-6) or loosen the tolerance.</li>
     <li>Small numerical differences or precision-related artifacts can appear for large grids, high dynamic range, or cancellation-sensitive features.</li>
     <li>For important checks, compare against the <strong>Exact sum</strong> backend on a small grid.</li>
     <li>If the interpretation changes with backend or grid density, treat that result cautiously.</li>

@@ -10,10 +10,12 @@
   const FINE_GRID_BUDGET = 768 * 1024 * 1024; // bytes per fine-grid buffer (a plan holds two)
   const CHECK_POINTS = 4;
   const CHECK_LIMIT = 1e-3;
-  // wgpuNUFFT's clustering-safe block spreader needs each fine-grid axis to
-  // be at least max(2B, B + 2w, B + w + 5) cells, B = [16, 16, 8] for the
-  // (l, k, h) dimensions; smaller grids use a per-cell gather that stalls
-  // (and can lose the device) when many points share a few cells.
+  // Short axes are padded to max(2B, B + 2w, B + w + 5) fine-grid cells,
+  // B = [16, 16, 8] for the (l, k, h) dimensions, where wgpu-web 0.2 used
+  // its block spreader (its per-cell gather stalled on clustered points).
+  // wgpu-web 0.3 spreads every grid alike; the padding now gives small grids,
+  // such as the lattice grids of A_delta, one shape whose shaders compile
+  // once, instead of once per shape.
   const BLOCK = [16, 16, 8];
 
   let contextPromise = null;
@@ -113,7 +115,7 @@
     }, PLAN_CACHE);
   }
 
-  // Smallest mode count per (l, k, h) dimension that keeps the block spreader.
+  // Smallest mode count per (l, k, h) dimension; see BLOCK.
   function minimumModes(sigma, eps) {
     const T1 = mapping();
     const w = T1.kernelWidth(sigma, eps);
@@ -193,8 +195,8 @@
       const count = spec.sourcesPacked.length / 3;
       const capacity = Math.max(count, Math.floor(Number(spec.pointCapacity) || 0));
       const source = pointSet(ctx, spec.sourcesPacked, grid.Bq, axes, capacity);
-      // Pad short axes up to the block-spreader minimum; the extra modes
-      // extend each axis upwards and are dropped when copying out.
+      // Pad short axes (see BLOCK); the extra modes extend each axis
+      // upwards and are dropped when copying out.
       const minModes = minimumModes(sigma, eps);
       const nl = axes[2].count;
       const nk = axes[1].count;

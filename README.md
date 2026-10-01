@@ -156,9 +156,10 @@ monorepo, where the tool lived under `RMCProfileUtilities/Diffuse_Scattering/`.
 The shared modules `js/unified_hdf5.js` and `js/h5wasm.js` are vendored from
 that monorepo's `Format_Converter` component; `h5wasm` is NIST-developed
 software (see `js/h5wasm-LICENSE.txt`). `js/wgpu_web.js` is the standalone
-build of wgpu-web 0.2.0 from
+build of wgpu-web 0.3.0 attached to the
 [MaximEremenko/wgpuNUFFT](https://github.com/MaximEremenko/wgpuNUFFT)
-(commit `011f4de`, built with `wgpu-web/build_standalone.py`). Companion
+[v0.3.0 release](https://github.com/MaximEremenko/wgpuNUFFT/releases/tag/v0.3.0)
+(commit `a600112`, built by `wgpu-web/build_standalone.py` in its CI). Companion
 tools from the Utilities collection remain in the monorepo and are linked
 from the documentation.
 
