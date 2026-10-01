@@ -1,8 +1,10 @@
 # Diffuse Scattering Example Files
 
 This directory contains example structures for the browser-based
-diffuse-scattering calculator: `.rmc6f` profiles, magnetic configurations
-and LAMMPS spin data.
+diffuse-scattering calculator: `.rmc6f` profiles, magnetic configurations,
+LAMMPS spin data and modulated structures. The antiferromagnetic MnO files
+and the skyrmion film have no example button; load them with the file
+picker.
 
 Included files:
 
@@ -51,7 +53,8 @@ current column order (`id type x y z spx spy spz sp`, units metal):
     (topological charge −1 per magnetic cell) and 2.5 μB moments: six
     magnetic satellites around every Bragg point (in the example's grid,
     around the origin) and rods along l, since the film is one layer thick.
-    The example button computes magnetic scattering only, on a linear scale.
+    Compute magnetic scattering only, on the l = 0 plane with h and k from
+    -15 to 15 in steps of 1, and view it on a linear scale.
 
 The calculator takes the whole LAMMPS box as the cell, so h, k, l count
 reciprocal-box units: bcc (1 1 0) is (10 10 0) here, and the skyrmion
@@ -62,13 +65,19 @@ finite box shows only its size fringes. `tools/make_lammps_examples.py`
 writes both files and checks the skyrmion texture's topological charge. They
 are generated rather than copied from LAMMPS, whose own examples are GPL.
 
-Modulation example (`modulation/`):
+Modulated structures (`modulation/`), written by
+`tools/make_modulation_examples.py`:
 
+- `KCP_Pt_chains.rmc6f`
+  - The Pt atoms of KCP, K2Pt(CN)4Br0.3·3H2O: 17×17 chains along c of 40 Pt
+    (11560 atoms; Pt 2.89 Å apart, chains 9.87 Å apart). Each chain carries
+    a longitudinal Peierls wave of 0.03 Å with q = 2kF = 0.85 per Pt spacing,
+    in a phase of its own, so the satellites spread into diffuse sheets at
+    l = n ± 0.85. The "KCP Pt chains" button shows them in a cut-away cube.
 - `Cr_bcc.rmc6f`
-  - bcc chromium, 21×21×21 cells (18522 atoms, a = 2.884 Å). The "Cr
-    spin-density wave" button applies chromium's transverse SDW,
-    q = (1 − 1/21, 0, 0) with moments along b, using the calculator's
-    Modulation tools. `tools/make_modulation_examples.py` writes the file.
+  - bcc chromium, 21×21×21 cells (18522 atoms, a = 2.884 Å), a plain lattice
+    for the Modulation tools: apply chromium's transverse SDW,
+    q = (1 − 1/21, 0, 0) with moments along b, as the guide describes.
 
 For workflow guidance and scientific context, see:
 

@@ -63,6 +63,11 @@
     <li><a href="../Examples/magnetic/MnO.rmc6f"><code>magnetic/MnO.rmc6f</code></a>, <a href="../Examples/magnetic/MnO_spins.cfg"><code>magnetic/MnO_spins.cfg</code></a>, <a href="../Examples/magnetic/MnO.dat"><code>magnetic/MnO.dat</code></a> (RMCProfile, load together)</li>
     <li><a href="../Examples/lammps/fe_bcc_spins.data"><code>lammps/fe_bcc_spins.data</code></a>, <a href="../Examples/lammps/skyrmion_film.data"><code>lammps/skyrmion_film.data</code></a> (LAMMPS <code>atom_style spin</code>)</li>
   </ul>
+  <p>Modulated structures (see <a href="#modulation-examples">Modulated Structures</a>):</p>
+  <ul>
+    <li><a href="../Examples/modulation/KCP_Pt_chains.rmc6f"><code>modulation/KCP_Pt_chains.rmc6f</code></a> (the Pt chains of KCP, each with its own Peierls wave)</li>
+    <li><a href="../Examples/modulation/Cr_bcc.rmc6f"><code>modulation/Cr_bcc.rmc6f</code></a> (bcc Cr, for the Modulation tools)</li>
+  </ul>
 </section>
 <section>
   <h2>At A Glance</h2>
@@ -71,6 +76,7 @@
     <tr><td><code>LiFeO2.rmc6f</code></td><td>&gamma;-LiFeO2</td><td>20&times;20&times;20 supercell, 64,000 atoms</td><td>Learn diffuse manifolds and superlattice condensation in a chemically ordered benchmark.</td></tr>
     <tr><td><code>CaTiO3.rmc6f</code></td><td>CaTiO3</td><td>16&times;16&times;16 supercell, 20,480 atoms</td><td>Compare overlapping displacement-driven diffuse features with different shapes.</td></tr>
     <tr><td><code>PMN_300k.rmc6f</code></td><td>PMN at 300 K</td><td>40&times;40&times;40 supercell, 320,000 atoms</td><td>Inspect anisotropic relaxor diffuse scattering and advanced slice placement in the largest shipped benchmark.</td></tr>
+    <tr><td><code>modulation/KCP_Pt_chains.rmc6f</code></td><td>KCP, Pt only</td><td>17&times;17 chains of 40 Pt, 11,560 atoms</td><td>See a modulation without order between chains turn its satellites into diffuse sheets.</td></tr>
   </table>
 </section>
 <section>
@@ -171,19 +177,28 @@
 </section>
 <section id="magnetic-examples">
   <h2>Magnetic Examples</h2>
-  <p>Six sets of spin configurations ship in <code>Examples/magnetic</code> and <code>Examples/lammps</code>, under <strong>MnO spins</strong> and <strong>LAMMPS spins</strong> in the Structure card's <strong>Examples</strong>. Each button sets the grid, and after the first compute the slice opens on the plane with the main features. Magnetic scattering is computed for neutrons. When a file carries spins and the Magnetic mode is nuclear only, the mode switches to nuclear + magnetic.</p>
+  <p>Six sets of spin configurations ship in <code>Examples/magnetic</code> and <code>Examples/lammps</code>. Three have buttons, under <strong>MnO spins</strong> and <strong>LAMMPS spins</strong> in the Structure card's <strong>Examples</strong>; load the others with the file picker. Each button sets the grid, and after the first compute the slice opens on the plane with the main features. Magnetic scattering is computed for neutrons. When a file carries spins and the Magnetic mode is nuclear only, the mode switches to nuclear + magnetic.</p>
   <table>
-    <tr><th>Button</th><th>Files</th><th>What to look for</th></tr>
-    <tr><td>MnO spins: AFM</td><td><code>MnO_order_spins.txt</code> (Scatty)</td><td>The type-II antiferromagnet of MnO: magnetic Bragg peaks at (&frac12; &frac12; &frac12;)-type positions on the <em>h</em> = &frac12; plane.</td></tr>
+    <tr><th>Example</th><th>Files</th><th>What to look for</th></tr>
+    <tr><td>MnO antiferromagnet (load by hand)</td><td><code>MnO_order_spins.txt</code> (Scatty)</td><td>The type-II antiferromagnet of MnO: magnetic Bragg peaks at (&frac12; &frac12; &frac12;)-type positions on the <em>h</em> = &frac12; plane (grid &minus;2&hellip;2).</td></tr>
     <tr><td>MnO spins: random</td><td><code>MnO_random_spins.txt</code> (Scatty)</td><td>An ideal paramagnet: magnetic intensity that falls off smoothly with the form factor.</td></tr>
-    <tr><td>MnO spins: RMCProfile</td><td><code>MnO.rmc6f</code>, <code>MnO_spins.cfg</code>, <code>MnO.dat</code></td><td>The same antiferromagnet in RMCProfile's format, with moments and &lang;j<sub>0</sub>&rang; from the <code>.dat</code> MAGNETISM block.</td></tr>
+    <tr><td>MnO antiferromagnet, RMCProfile (load by hand)</td><td><code>MnO.rmc6f</code>, <code>MnO_spins.cfg</code>, <code>MnO.dat</code></td><td>The same antiferromagnet in RMCProfile's format, selected together, with moments and &lang;j<sub>0</sub>&rang; from the <code>.dat</code> MAGNETISM block.</td></tr>
     <tr><td>MnO spins: 160 K</td><td><code>MnO_160K_spins_01.txt</code> to <code>_08.txt</code> (Scatty)</td><td>Paramagnetic MnO: 8 Monte Carlo snapshots of the J<sub>1</sub>&ndash;J<sub>2</sub> model with the couplings Paddison refined to 160 K data, averaged. Broad diffuse maxima at the (&frac12; &frac12; &frac12;)-type positions, like Figure 1 of the Spinteract paper.</td></tr>
     <tr><td>LAMMPS spins: Fe bcc</td><td><code>fe_bcc_spins.data</code></td><td>Ferromagnetic Bragg peaks on the nuclear ones, such as (10 10 0) and (20 0 0), over paramagnetic and thermal diffuse scattering. The <em>l</em> = 0 plane.</td></tr>
-    <tr><td>LAMMPS spins: skyrmion film</td><td><code>skyrmion_film.data</code></td><td>A triple-q skyrmion lattice in a triangular Fe monolayer, magnetic only: six satellites around the origin on the <em>l</em> = 0 plane, shown on a linear scale. The log scale also shows the higher harmonics.</td></tr>
+    <tr><td>Skyrmion film (load by hand)</td><td><code>skyrmion_film.data</code></td><td>A triple-q skyrmion lattice in a triangular Fe monolayer. Compute it as magnetic only on the <em>l</em> = 0 plane (<em>h</em>, <em>k</em> from &minus;15 to 15, step 1) and view it on a linear scale: six satellites around the origin. The log scale also shows the higher harmonics.</td></tr>
   </table>
   <p>A LAMMPS data file has no unit cell, so the calculator takes the whole box as the cell, and <em>h</em>, <em>k</em>, <em>l</em> count reciprocal-box units. The Fe box is 10 cells wide, so bcc (1 1 0) appears at (10 10 0). The skyrmion period of 10 sites in a 60-site box puts the satellites 6 units from the origin, at (6 0 0), (0 6 0), (6 6 0) and their opposites. The box is periodic, so it scatters only at integer box units, and the examples use step 1, the default for LAMMPS data. Between integer units, a finite box shows only its size fringes. Both files are written by <code>tools/make_lammps_examples.py</code>, which also checks that the skyrmion texture has topological charge &minus;1 per magnetic cell.</p>
   <p>The MnO Scatty results are checked against J. A. M. Paddison's Scatty in the test suite.</p>
-  <p><strong>Modulations: Cr spin-density wave</strong> loads bcc chromium (<code>Examples/modulation/Cr_bcc.rmc6f</code>, 21&times;21&times;21 cells) and applies its incommensurate transverse SDW with the Modulation tools, which appear only for such examples. Satellite pairs split by &plusmn;1/21 along h sit around (1 0 0) and (2 &plusmn;1 0). They almost vanish around (0 1 0), where <strong>Q</strong> is nearly parallel to the moments.</p>
+</section>
+<section id="modulation-examples">
+  <h2>Modulated Structures</h2>
+  <p><strong>Modulations: KCP Pt chains</strong> loads the Pt atoms of KCP, K<sub>2</sub>Pt(CN)<sub>4</sub>Br<sub>0.3</sub>&middot;3H<sub>2</sub>O (<code>Examples/modulation/KCP_Pt_chains.rmc6f</code>): chains along <em>c</em> with Pt 2.89 &Aring; apart, 9.87 &Aring; from chain to chain, 17&times;17 chains of 40 Pt. Each chain carries a longitudinal Peierls wave with <em>q</em> = 2<em>k</em><sub>F</sub> = 0.85 per Pt spacing, in a phase of its own. The volume opens as a cut-away cube on a log scale.</p>
+  <ul>
+    <li>With no phase relation between the chains, the satellites at <em>l</em> = n &plusmn; 0.85 do not form spots: they spread over all <em>h</em> and <em>k</em> into diffuse sheets, as in the X-ray photographs of KCP (Com&egrave;s et al., 1973).</li>
+    <li>The sheets grow as <em>l</em><sup>2</sup>, the displacements being along the chains; the faint sheets between them are the second order, at <em>l</em> = n &plusmn; 1.7.</li>
+    <li>The faces of the cube cut the sheets into lines; the 2D slice map shows the (0 <em>k</em> <em>l</em>) plane, where every sheet is a line.</li>
+  </ul>
+  <p><code>Examples/modulation/Cr_bcc.rmc6f</code> is a plain bcc Cr box (21&times;21&times;21 cells) for the Modulation tools: <strong>Modulations &rarr; Modulate the loaded structure</strong> applies chromium's incommensurate transverse spin-density wave, whose satellites stay sharp because the wave is in step throughout the box. The <a href="diffuse_scattering.html#modulation">guide</a> gives the settings and what to look for.</p>
 </section>
 <section>
   <h2>How To Choose The Right Example</h2>
@@ -192,11 +207,13 @@
     <tr><td>normal-plane slicing and diffuse manifolds</td><td><code>LiFeO2.rmc6f</code></td></tr>
     <tr><td>how different structural mechanisms give different diffuse-feature shapes</td><td><code>CaTiO3.rmc6f</code></td></tr>
     <tr><td>anisotropic relaxor diffuse scattering in a large benchmark</td><td><code>PMN_300k.rmc6f</code></td></tr>
-    <tr><td>magnetic Bragg peaks and paramagnetic scattering</td><td>MnO spins (AFM, random)</td></tr>
-    <tr><td>magnetic RMCProfile input</td><td>MnO spins: RMCProfile</td></tr>
+    <tr><td>paramagnetic scattering</td><td>MnO spins: random</td></tr>
+    <tr><td>magnetic Bragg peaks, and magnetic RMCProfile input</td><td>the MnO antiferromagnet, loaded by hand (Scatty or RMCProfile files)</td></tr>
     <tr><td>correlated paramagnetic scattering, averaged over configurations</td><td>MnO spins: 160 K</td></tr>
-    <tr><td>LAMMPS spins and the magnetic satellites of a modulated structure</td><td>LAMMPS spins: skyrmion film</td></tr>
-    <tr><td>an incommensurate spin-density wave and the polarization factor</td><td>Modulations: Cr spin-density wave</td></tr>
+    <tr><td>LAMMPS spins with thermal disorder</td><td>LAMMPS spins: Fe bcc</td></tr>
+    <tr><td>the magnetic satellites of a skyrmion lattice</td><td><code>skyrmion_film.data</code>, loaded by hand</td></tr>
+    <tr><td>diffuse scattering from a modulation without long-range order</td><td>Modulations: KCP Pt chains</td></tr>
+    <tr><td>an incommensurate spin-density wave and the polarization factor</td><td><code>Cr_bcc.rmc6f</code> with the Modulation tools</td></tr>
   </table>
 </section>
 <section>

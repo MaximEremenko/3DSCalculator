@@ -50,9 +50,9 @@ The `docs/` directory contains the full documentation set
   computation) with a pinned Compute button (`Ctrl+Enter`), three
   resizable and maximizable views, and a View panel for slice, color, 3D and export
   tools; light and dark themes; example structures one click away
-  (including MnO spin configurations in Scatty and RMCProfile formats,
-  paramagnetic MnO at 160 K as 8 Monte Carlo snapshots, and
-  LAMMPS spin data for bcc Fe and a skyrmion film); a drawer layout for
+  (including paramagnetic MnO, as random spins and at 160 K as 8 Monte
+  Carlo snapshots, LAMMPS spin data for bcc Fe, and the Pt chains of KCP,
+  whose independent Peierls waves give diffuse sheets); a drawer layout for
   tablets and phones.
 - **Magnetic scattering** (neutrons): magnetic-only or nuclear + magnetic
   intensity from Scatty spin files, RMCProfile magnetic configurations
@@ -61,8 +61,8 @@ The `docs/` directory contains the full documentation set
   factors for 155 ions, and optional ideal-paramagnet subtraction. A species
   table sets the form factor, C2 and moment of each magnetic species. It is
   validated against J. A. M. Paddison's Scatty on MnO and spin ice.
-- **Modulated and incommensurate structures** (optional tools, shown for
-  the Cr spin-density-wave example or on request): a displacive wave,
+- **Modulated and incommensurate structures** (optional tools, shown on
+  request): a displacive wave,
   spin-density wave or helix with any wavevector q, applied to the loaded
   structure; satellites come out at G ± q with the box's finite-size width.
 - **Radiation types**: neutron (fast and grouped-exact models), X-ray
@@ -136,6 +136,9 @@ Magnetic examples sit in [`Examples/magnetic/`](Examples/magnetic/) (MnO
 spin configurations as Scatty files and in RMCProfile's format) and
 [`Examples/lammps/`](Examples/lammps/) (LAMMPS `atom_style spin` data for
 bcc Fe and a skyrmion film, written by `tools/make_lammps_examples.py`).
+Modulated structures sit in [`Examples/modulation/`](Examples/modulation/)
+(the Pt chains of KCP and a bcc Cr box for the Modulation tools, written by
+`tools/make_modulation_examples.py`).
 [`Examples/README.md`](Examples/README.md) describes each file.
 
 ## Tests

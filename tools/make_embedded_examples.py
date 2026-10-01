@@ -16,11 +16,7 @@ from pathlib import Path
 FILES = [
     "Examples/LiFeO2.rmc6f",
     "Examples/CaTiO3.rmc6f",
-    "Examples/magnetic/MnO_order_spins.txt",
     "Examples/magnetic/MnO_random_spins.txt",
-    "Examples/magnetic/MnO.rmc6f",
-    "Examples/magnetic/MnO_spins.cfg",
-    "Examples/magnetic/MnO.dat",
     "Examples/magnetic/MnO_160K_spins_01.txt",
     "Examples/magnetic/MnO_160K_spins_02.txt",
     "Examples/magnetic/MnO_160K_spins_03.txt",
@@ -30,8 +26,7 @@ FILES = [
     "Examples/magnetic/MnO_160K_spins_07.txt",
     "Examples/magnetic/MnO_160K_spins_08.txt",
     "Examples/lammps/fe_bcc_spins.data",
-    "Examples/lammps/skyrmion_film.data",
-    "Examples/modulation/Cr_bcc.rmc6f",
+    "Examples/modulation/KCP_Pt_chains.rmc6f",
 ]
 OUT = Path("Examples/embedded")
 
