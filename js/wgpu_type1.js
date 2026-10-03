@@ -8,6 +8,7 @@
   const PLAN_CACHE = 3;
   const POINT_CACHE = 4;
   const FINE_GRID_BUDGET = 768 * 1024 * 1024; // bytes per fine-grid buffer (a plan holds two)
+  const MiB = 1024 * 1024;
   const CHECK_POINTS = 4;
   const CHECK_LIMIT = 1e-3;
   // Short axes are padded to max(2B, B + 2w, B + w + 5) fine-grid cells,
@@ -15,13 +16,60 @@
   // its block spreader (its per-cell gather stalled on clustered points).
   // wgpu-web 0.3 spreads every grid alike; the padding now gives small grids,
   // such as the lattice grids of A_delta, one shape whose shaders compile
-  // once, instead of once per shape.
+  // once, instead of once per shape. Mobile skips this optional padding.
   const BLOCK = [16, 16, 8];
 
   let contextPromise = null;
   const plans = new Map();
   const pointSets = new Map();
-  const stats = { lastCheckError: null, lastSlabs: 0, lastModes: null, adapter: null };
+  const stats = { lastCheckError: null, lastSlabs: 0, lastModes: null, adapter: null,
+    lastFineGridBytes: 0, estimatedWorkingBytes: 0, memoryBudgetBytes: 0 };
+
+  // WebGPU buffer limits describe individual allocations, not available RAM.
+  // iPads can advertise a desktop user agent; small deviceMemory is also a
+  // useful signal on browsers that expose it. Do not use viewport width.
+  function memoryPolicy() {
+    const nav = global.navigator || {};
+    const lowMemory = !!(nav.userAgentData && nav.userAgentData.mobile)
+      || /iPhone|iPad|iPod|Android/i.test(nav.userAgent || "")
+      || (nav.platform === "MacIntel" && nav.maxTouchPoints > 1)
+      || (Number(nav.deviceMemory) > 0 && Number(nav.deviceMemory) <= 4);
+    return {
+      lowMemory,
+      fineGridBytes: lowMemory ? 16 * MiB : FINE_GRID_BUDGET,
+      workingBytes: lowMemory ? 160 * MiB : 512 * MiB,
+      maxChunkPoints: lowMemory ? 120000 : Infinity,
+      maxGridPoints: lowMemory ? 8000000 : 1e8,
+      planCache: lowMemory ? 1 : PLAN_CACHE,
+      pointCache: lowMemory ? 2 : POINT_CACHE,
+    };
+  }
+
+  // Conservative working-set estimate for wgpu-web 0.3: two fine grids,
+  // FFT workspace, deconvolution, prepared/sorted points, and up to 64 MiB
+  // of heavy-bin partial sums. Readback uses GPU, WASM and JS copies.
+  function memoryEstimate(count, modes, sigma, eps, outputs) {
+    const T1 = mapping();
+    const fine = 8 * modes.reduce((p, n) => p * T1.fineGridLength(n, sigma, eps), 1);
+    const modeCount = modes.reduce((p, n) => p * n, 1);
+    const output = 8 * modeCount;
+    const resident = 4 * fine + 4 * modeCount + 80 * count + 65 * MiB + output;
+    const transient = 3 * output + 16 * outputs + 16 * count;
+    return { fine, output, resident, transient };
+  }
+
+  function cacheBytes() {
+    let bytes = 0;
+    for (const entry of plans.values()) bytes += entry.bytes;
+    for (const entry of pointSets.values()) bytes += entry.bytes;
+    return bytes;
+  }
+
+  function evictOldest(cache) {
+    const [key, entry] = cache.entries().next().value;
+    cache.delete(key);
+    entry.free();
+  }
 
   function mapping() {
     if (!global.DiffuseType1) throw new Error("DiffuseType1 missing. Load ./js/type1_grid.js first.");
@@ -63,10 +111,10 @@
   function reset() {
     freeAll(plans);
     freeAll(pointSets);
-    if (contextPromise) {
-      contextPromise.then(({ gpu }) => { try { gpu.free(); } catch (_) {} }).catch(() => {});
-    }
+    const pending = contextPromise;
     contextPromise = null;
+    return pending ? pending.then(({ gpu }) => { try { gpu.free(); } catch (_) {} }).catch(() => {})
+      : Promise.resolve();
   }
 
   // Fractional coordinates and uploaded type-1 points of one source set,
@@ -76,30 +124,48 @@
   function pointSet(ctx, packed, Bq, axes, capacity) {
     const key = `${capacity}|${axes[0].step}|${axes[1].step}|${axes[2].step}|${JSON.stringify(Bq)}`;
     const cached = pointSets.get(packed);
-    if (cached && cached.key === key) return cached;
+    if (cached && cached.key === key) {
+      pointSets.delete(packed);
+      pointSets.set(packed, cached);
+      return cached;
+    }
     if (cached) {
       pointSets.delete(packed);
       cached.free();
     }
     const T1 = mapping();
+    const policy = memoryPolicy();
+    // Evict before upload, so replacing a large point set does not briefly
+    // allocate both sets beyond the budget.
+    const bytes = capacity * 12 + packed.length * 8;
+    while (pointSets.size && (pointSets.size >= policy.pointCache
+      || cacheBytes() + bytes > policy.workingBytes)) evictOldest(pointSets);
     const u = T1.fractionalCoordinates(packed, Bq);
     const points = new Float32Array(capacity * 3);
-    points.set(T1.type1Points(u, axes));
+    T1.type1Points(u, axes, points);
     const buffer = ctx.gpu.upload(points);
     return remember(pointSets, packed, {
       key,
+      bytes,
       u,
       buffer,
       count: u.length / 3,
       free() { buffer.free(); },
-    }, POINT_CACHE);
+    }, policy.pointCache);
   }
 
-  async function plan(ctx, count, modes, eps, sigma) {
+  async function plan(ctx, count, modes, eps, sigma, estimate) {
     const key = `${count}|${modes.join("x")}|${eps}|${sigma}`;
     const cached = plans.get(key);
+    if (cached) plans.delete(key);
+    const policy = memoryPolicy();
+    while (plans.size && (plans.size >= policy.planCache
+      || cacheBytes() + estimate.resident + estimate.transient > policy.workingBytes)) evictOldest(plans);
+    // Other point sets are expendable; retain the active (most recent) set.
+    while (pointSets.size > 1 && cacheBytes() + estimate.resident + estimate.transient > policy.workingBytes) {
+      evictOldest(pointSets);
+    }
     if (cached) {
-      plans.delete(key);
       plans.set(key, cached);
       return cached;
     }
@@ -107,12 +173,15 @@
       new Uint32Array(modes), count, 1, eps, 1,
       ctx.api.WebNufftModeOrder.Centered, sigma, ctx.api.WebFftPrecision.F32
     );
-    const output = ctx.gpu.createBuffer(Number(p.outputBytes));
+    let output;
+    try { output = ctx.gpu.createBuffer(Number(p.outputBytes)); }
+    catch (error) { p.free(); throw error; }
     return remember(plans, key, {
       plan: p,
       output,
+      bytes: estimate.resident,
       free() { output.free(); p.free(); },
-    }, PLAN_CACHE);
+    }, policy.planCache);
   }
 
   // Smallest mode count per (l, k, h) dimension; see BLOCK.
@@ -127,21 +196,26 @@
     });
   }
 
-  // Largest number of h-planes per transform whose fine grid fits a buffer.
-  function planesPerSlab(ctx, nl, nk, planes, sigma, eps) {
-    const T1 = mapping();
-    const plane = 8 * T1.fineGridLength(nl, sigma, eps) * T1.fineGridLength(nk, sigma, eps);
+  // Choose h-slabs within the buffer and total working-set budgets.
+  function planesPerSlab(ctx, nl, nk, planes, minimum, count, outputs, sigma, eps) {
+    const policy = memoryPolicy();
     const limit = Math.min(
-      FINE_GRID_BUDGET,
+      policy.fineGridBytes,
       Number(ctx.gpu.maxStorageBufferBindingSize) || 134217728,
       Number(ctx.gpu.maxBufferSize) || 268435456
     );
-    let slab = planes;
-    while (slab > 1 && plane * T1.fineGridLength(slab, sigma, eps) > limit) slab = Math.ceil(slab / 2);
-    if (plane * T1.fineGridLength(slab, sigma, eps) > limit) {
-      throw new Error("One h-plane of this grid needs more GPU memory than a single buffer allows; reduce the k or l range.");
+    // Check the padded shape itself; padding after the check could exceed
+    // the limit even when an unpadded single plane fitted.
+    let slab = Math.max(planes, minimum);
+    for (;;) {
+      const estimate = memoryEstimate(count, [nl, nk, slab], sigma, eps, outputs);
+      const working = estimate.resident + estimate.transient + count * 36;
+      if (estimate.fine <= limit && estimate.output <= limit && working <= policy.workingBytes) return slab;
+      if (slab <= minimum) {
+        throw new Error("This grid's smallest h-slab exceeds the NUFFT memory budget; reduce the k/l range or use a coarser grid step.");
+      }
+      slab = Math.max(minimum, Math.ceil(slab / 2));
     }
-    return slab;
   }
 
   // Compares a few outputs with exact sums, relative to sum_j |c_j|.
@@ -191,20 +265,45 @@
 
     try {
       stage("t1_setup", {});
-      const ctx = await context();
+      let ctx = await context();
       const count = spec.sourcesPacked.length / 3;
       const capacity = Math.max(count, Math.floor(Number(spec.pointCapacity) || 0));
-      const source = pointSet(ctx, spec.sourcesPacked, grid.Bq, axes, capacity);
+      const policy = memoryPolicy();
+      const bindingLimit = Math.min(Number(ctx.gpu.maxStorageBufferBindingSize) || 134217728,
+        Number(ctx.gpu.maxBufferSize) || 268435456);
+      if (capacity * 24 > bindingLimit) {
+        throw new Error("The NUFFT point buffers exceed the GPU buffer limit; use a smaller configuration.");
+      }
       // Pad short axes (see BLOCK); the extra modes extend each axis
       // upwards and are dropped when copying out.
-      const minModes = minimumModes(sigma, eps);
+      const minModes = policy.lowMemory ? [1, 1, 1] : minimumModes(sigma, eps);
       const nl = axes[2].count;
       const nk = axes[1].count;
       const ml = Math.max(nl, minModes[0]);
       const mk = Math.max(nk, minModes[1]);
-      const slab = Math.max(planesPerSlab(ctx, ml, mk, planes, sigma, eps), minModes[2]);
+      const slab = planesPerSlab(ctx, ml, mk, planes, minModes[2], capacity, grid.count, sigma, eps);
       const modes = [ml, mk, slab];
-      const p = await plan(ctx, capacity, modes, eps, sigma);
+      // Plan internals in this library rely on browser GC when freed. On
+      // mobile, destroy the old device before switching shapes, releasing
+      // its workspace even if GC has not run yet.
+      const key = `${capacity}|${modes.join("x")}|${eps}|${sigma}`;
+      if (policy.lowMemory && plans.size && !plans.has(key)) {
+        await reset();
+        ctx = await context();
+      }
+      const estimate = memoryEstimate(capacity, modes, sigma, eps, grid.count);
+      // Make room for the next plan before uploading its points, too.
+      if (!plans.has(key)) {
+        const pointBytes = capacity * 12 + count * 24;
+        while (plans.size && cacheBytes() + pointBytes + estimate.resident + estimate.transient > policy.workingBytes) {
+          evictOldest(plans);
+        }
+      }
+      const source = pointSet(ctx, spec.sourcesPacked, grid.Bq, axes, capacity);
+      const p = await plan(ctx, capacity, modes, eps, sigma, estimate);
+      stats.lastFineGridBytes = estimate.fine;
+      stats.estimatedWorkingBytes = cacheBytes() + estimate.transient;
+      stats.memoryBudgetBytes = policy.workingBytes;
       const out = new Float64Array(grid.count * 2);
       const phased = new Float32Array(capacity * 2);
       const slabs = Math.ceil(planes / slab);
@@ -243,10 +342,10 @@
       stage("done", { outputs: grid.count });
       return out;
     } catch (error) {
-      reset();
+      await reset();
       throw error;
     }
   }
 
-  global.WgpuType1 = Object.freeze({ run, reset, stats });
+  global.WgpuType1 = Object.freeze({ run, reset, stats, memoryPolicy });
 })(typeof window !== "undefined" ? window : globalThis);

@@ -1014,7 +1014,7 @@ const serveHint=location.protocol==="file:"?" If browser blocks module loading u
 throw new Error(`webgpufft API missing.${serveHint} ${errs.join(" | ")}`.trim());
 }
 async function ensurePlotly(){if(window.Plotly&&typeof window.Plotly.react==="function")return window.Plotly;const errs=[];try{await loadScriptOnce(PLOTLY_CDN);}catch(e){errs.push(e&&e.message?e.message:String(e));}if(window.Plotly&&typeof window.Plotly.react==="function")return window.Plotly;throw new Error(`Plotly is unavailable${errs.length?`: ${errs.join(" | ")}`:""}.`);}
-function applyBackendDefaults(backend,announce=false){const p=BACKEND_PRESETS[backend];if(!p)return;let changed=false;if($("tol").value!==p.tol){$("tol").value=p.tol;changed=true;}if($("upsamp").value!==p.upsamp){$("upsamp").value=p.upsamp;changed=true;}if($("gridLimit").value!==p.gridLimit){$("gridLimit").value=p.gridLimit;changed=true;}if(announce&&changed){const n=backend==="webgpu_fft"?"WebGPU":"CPU";status(`Applied ${n} preset: tol=${p.tol}, upsamp=${p.upsamp}, grid limit=${p.gridLimit}.`,"ok");}}
+function applyBackendDefaults(backend,announce=false){const base=BACKEND_PRESETS[backend];if(!base)return;const gpu=backend==="webgpu_fft"||backend==="wgpu_type1",p={...base,gridLimit:gpu?String(Math.min(Number(base.gridLimit),window.WgpuType1.memoryPolicy().maxChunkPoints)):base.gridLimit};let changed=false;if($("tol").value!==p.tol){$("tol").value=p.tol;changed=true;}if($("upsamp").value!==p.upsamp){$("upsamp").value=p.upsamp;changed=true;}if($("gridLimit").value!==p.gridLimit){$("gridLimit").value=p.gridLimit;changed=true;}if(announce&&changed){const n=gpu?"WebGPU":"CPU";status(`Applied ${n} preset: tol=${p.tol}, upsamp=${p.upsamp}, grid limit=${p.gridLimit}.`,"ok");}}
 function formatWebgpuStageTotals(stages){const parts=[];for(const k of WEBGPU_STAGE_ORDER){const v=stages[k]||0;if(v>0)parts.push(`${WEBGPU_STAGE_LABEL[k]||k}=${fmtMs(v)}`);}return parts.join(", ");}
 /* Lattice centring of the loaded structure (nuclear per element, magnetic from the moments), cached on it */
 function structureCentring(r){if(!r||!window.DiffuseCore||!window.DiffuseCore.structureCentring)return null;const key=r.magnetic?r.magnetic:null;if(r._centring&&r._centring.key===key)return r._centring.value;let value=null;try{value=window.DiffuseCore.structureCentring(r);}catch(_){value=null;}r._centring={key,value};return value;}
@@ -1845,9 +1845,10 @@ const r=filterParsedByElements(state.rmc,getIncludedElements());
 const hMinReq=Number($("hMin").value),hMaxReq=Number($("hMax").value),hStepReq=Number($("hStep").value);
 const kMinReq=Number($("kMin").value),kMaxReq=Number($("kMax").value),kStepReq=Number($("kStep").value);
 const lMinReq=Number($("lMin").value),lMaxReq=Number($("lMax").value),lStepReq=Number($("lStep").value);
-const h=axis(hMinReq,hMaxReq,hStepReq),k=axis(kMinReq,kMaxReq,kStepReq),l=axis(lMinReq,lMaxReq,lStepReq),shape=[h.length,k.length,l.length],grid=shape[0]*shape[1]*shape[2],backend=$("backend").value,limit=Number($("gridLimit").value),scatteringCfg=getScatteringConfigFromUi();
-if(!Number.isFinite(limit)||limit<1)throw new Error("Grid safety limit must be positive");
-if(grid>1e8)throw new Error(`The grid has ${grid.toLocaleString("en-US")} points (${shape.join(" × ")}); its intensities alone would need ${(grid*8/1e9).toFixed(1)} GB. Narrow the ranges or use a coarser step.`);
+const h=axis(hMinReq,hMaxReq,hStepReq),k=axis(kMinReq,kMaxReq,kStepReq),l=axis(lMinReq,lMaxReq,lStepReq),shape=[h.length,k.length,l.length],grid=shape[0]*shape[1]*shape[2],backend=$("backend").value,requestedLimit=Number($("gridLimit").value),scatteringCfg=getScatteringConfigFromUi(),memoryPolicy=window.WgpuType1.memoryPolicy();
+if(!Number.isFinite(requestedLimit)||requestedLimit<1)throw new Error("Grid safety limit must be positive");
+const limit=(backend==="webgpu_fft"||backend==="wgpu_type1")?Math.min(requestedLimit,memoryPolicy.maxChunkPoints):requestedLimit;
+if(grid>memoryPolicy.maxGridPoints)throw new Error(`The grid has ${grid.toLocaleString("en-US")} points (${shape.join(" × ")}); ${memoryPolicy.lowMemory?"the mobile memory limit is 8,000,000 points":"its intensities alone would need "+(grid*8/1e9).toFixed(1)+" GB"}. Narrow the ranges or use a coarser step.`);
 const gridAware=backend==="wgpu_type1",planeSize=k.length*l.length,useWebgpuChunking=(backend==="webgpu_fft"||gridAware)&&grid>limit;
 if(backend!=="webgpu_fft"&&!gridAware&&grid>limit){const rec=Math.ceil(grid*1.1);throw new Error(`Grid ${grid} exceeds limit ${limit}. Set Grid safety limit >= ${rec} (or choose WebGPU preset).`);}
 if(backend==="exact"&&r.atoms*grid>EXACT_SUM_WORK_LIMIT)throw new Error(`Exact sum needs ${r.atoms} atoms × ${grid} grid points = ${(r.atoms*grid).toExponential(2)} terms per transform (limit ${EXACT_SUM_WORK_LIMIT.toExponential(0)}). Use a smaller grid or a NUFFT backend.`);
@@ -1862,6 +1863,9 @@ const chunkSize=useWebgpuChunking?(gridAware?Math.max(1,Math.floor(limit/planeSi
 if(useWebgpuChunking){status(`Grid ${grid} exceeds safety limit ${limit}; running WebGPU chunked NUFFT in ${totalChunks} chunks ...`,"warn");await new Promise(r=>setTimeout(r,0));}
 /* Several configurations: each is computed with the same settings and their intensities are averaged */
 const configs=ensembleConfigs(),nConf=configs.length;let amp=null,sumI=null;
+const releaseType1=gridAware&&memoryPolicy.lowMemory;
+if(releaseType1)await window.WgpuType1.reset();
+try{
 for(let ci=0;ci<nConf;ci++){
 const rc=ci===0?r:filterParsedByElements(configs[ci],getIncludedElements()),tag=nConf>1?`Configuration ${ci+1} of ${nConf}: `:"";
 amp=await window.DiffuseAmplitude.computeIntensity({
@@ -1883,6 +1887,7 @@ onStatus:(msg)=>{status(tag+msg);}
 for(const key of["prepare","a","aavg","adelta","finalize"])timings[key]+=amp.timings[key]||0;
 if(nConf>1){const Ic=amp.I;if(!sumI)sumI=new Float64Array(Ic.length);for(let i=0;i<Ic.length;i++)sumI[i]+=Ic[i];}
 }
+}finally{if(releaseType1)await window.WgpuType1.reset();}
 let I=amp.I,min=amp.min,max=amp.max;
 if(nConf>1){for(let i=0;i<sumI.length;i++)sumI[i]/=nConf;I=sumI;const mm=minMaxArray(I);min=mm.min;max=mm.max;}
 /* Laue symmetrization (js/laue_symmetry.js): the mean over the equivalents that fall on the grid */

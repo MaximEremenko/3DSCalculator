@@ -73,6 +73,12 @@
   </ul>
 </section>
 <section>
+  <h2>A Phone Reloads Or Closes The Page During Compute</h2>
+  <p>A large NUFFT needs more memory than the final intensity array: oversampled grids, FFT and point-sorting workspace, amplitude chunks and readback copies are also allocated. The GPU's maximum buffer size is not a measure of available memory.</p>
+  <p>On phones, tablets and devices reporting at most 4 GB of RAM, WebGPU chunks are capped at 120,000 points (rounded to whole <em>h</em>-planes for type-1), and type-1 uses smaller slabs within a conservative memory budget. Its GPU workspace is released before smoothing and visualization. Grids above 8,000,000 points are refused on these devices; increase the step or narrow the ranges. Chunking does not remove the need to hold the final volume in memory.</p>
+  <p>To compare with the earlier implementation, select <strong>Type-3 + webgpufft</strong> and recompute the same grid. A desktop browser is preferable for volumes that exceed the mobile limit.</p>
+</section>
+<section>
   <h2>2D Slice Looks Hard To Interpret</h2>
   <ul>
     <li>Reset the slice and color levels.</li>

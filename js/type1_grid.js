@@ -50,9 +50,9 @@
 
   // Point-major type-1 coordinates with the l axis first, so that the output
   // mode index il + nl*(ik + nk*ih) equals the calculator's C-ordered index.
-  function type1Points(u, axes) {
+  function type1Points(u, axes, output) {
     const n = u.length / 3;
-    const out = new Float32Array(n * 3);
+    const out = output || new Float32Array(n * 3);
     const [ah, ak, al] = axes;
     for (let j = 0; j < n; j++) {
       out[j * 3] = wrap(TWO_PI * al.step * u[j * 3 + 2]);
