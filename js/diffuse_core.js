@@ -88,20 +88,17 @@
     tl: 0.8776,
     pb: 0.9405,
     bi: 0.8532,
-    po: 0,
-    at: 0,
-    rn: 0,
-    fr: 0,
     ra: 1,
-    ac: 0,
     th: 1.031,
     pa: 0.91,
     u: 0.8417,
     np: 1.055,
-    pu: 0,
     am: 0.83,
-    cm: 0,
   };
+  // Coherent scattering lengths in 1e-12 cm, Sears (1992) / NIST, natural abundance;
+  // D and 7Li ("7l") are isotopes. Po, At, Rn, Fr, Ac, Pu and Cm have no tabulated
+  // natural value and are left out, so they are reported as unknown rather than
+  // scattering as b = 0.
 
   function mul(v, m) {
     return [
@@ -176,6 +173,27 @@
       out[q] = Math.hypot(v[0], v[1], v[2]);
     }
     return out;
+  }
+
+  // Largest |q| on the h,k,l grid. |q| is the norm of a linear map of (h,k,l),
+  // so its maximum over the box lies at one of the eight corners.
+  function gridQMax(h, k, l, Bq) {
+    if (!h.length || !k.length || !l.length) return 0;
+    const extremes = (v) => {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const x of v) {
+        if (x < lo) lo = x;
+        if (x > hi) hi = x;
+      }
+      return [lo, hi];
+    };
+    let best = 0;
+    for (const a of extremes(h)) for (const b of extremes(k)) for (const c of extremes(l)) {
+      const v = mul([a, b, c], Bq);
+      best = Math.max(best, Math.hypot(v[0], v[1], v[2]));
+    }
+    return best;
   }
 
   function attachNeutronCoefficients(parsed, fallback = 10) {
@@ -410,7 +428,7 @@
 
   // Neutron magnetic scattering length per Bohr magneton, gamma r_e / 2, in
   // 1e-12 cm (CODATA 2018: gamma = 1.91304273, r_e = 2.8179403262 fm); its
-  // square is 0.0726529 barn, as in Scatty (RMCProfile uses 0.269536639).
+  // square is 0.0726529 barn, as in Scatty; RMCProfile uses the same constants.
   const MAGNETIC_LENGTH = (1.91304273 * 2.8179403262) / 2 / 10;
 
   // Empty accumulators for |dM|^2 and qhat.dM over a chunk.
@@ -540,6 +558,7 @@
     complexOnes,
     targetsChunk,
     qMagnitudesChunk,
+    gridQMax,
     attachNeutronCoefficients,
     laueAxis,
     laueChunk,

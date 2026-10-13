@@ -140,12 +140,56 @@
   }
 
   const TABLE_LABELS = {
+    waasmaier: "Waasmaier-Kirfel",
     lobato: "Lobato",
     peng_0_4: "Peng",
     doyle: "Doyle-Turner",
     weickenmeier: "Weickenmeier-Kohl",
     kirkland: "Kirkland",
+    peng_ion: "Peng ion",
   };
+
+  // Published fit ranges as s_max = max sin(theta)/lambda in 1/A; |Q|_max = 4 pi s_max.
+  // Waasmaier & Kirfel (1995): 0 <= s <= 6. Peng et al. (1996) Table 1, this table
+  // (MULTEM's "Peng 0-4", g = 2s <= 4): s <= 2; their Table 3 is the s <= 6 fit.
+  // Doyle & Turner (1968): s <= 2. Kirkland (2010) and Lobato & Van Dyck (2014) fit in
+  // q = 2s up to 12. Weickenmeier & Kohl (1991) build in the Rutherford tail; their
+  // X-ray form is a Gaussian sum and is used to s <= 6 like the others. Peng (1998)
+  // ions: s <= 2, where the Gaussian part follows the neutral tail (84 of 104 ions
+  // fall 10% below it before |Q| = 40). Beyond s_max a Gaussian electron fit falls
+  // below Z/(8 pi^2 a0 s^2) and its Mott-Bethe X-ray value climbs back towards Z:
+  // Fe at |Q| = 30 gives 6.0 (Peng) and 9.6 (Doyle-Turner) against 2.4 (Waasmaier-
+  // Kirfel, Lobato, Kirkland, Dirac-Fock); at |Q| = 40 they give 15.4 and 19.8
+  // against 1.5. The evaluators keep returning the fit beyond s_max; the intensity
+  // calculation warns once per run when its grid reaches past it (as RMCProfile).
+  const S_MAX = {
+    waasmaier: 6,
+    lobato: 6,
+    peng_0_4: 2,
+    doyle: 2,
+    weickenmeier: 6,
+    kirkland: 6,
+    peng_ion: 2,
+  };
+
+  function tableRange(table) {
+    const sMax = S_MAX[table];
+    if (!(sMax > 0)) throw new Error(`Unknown scattering table "${table}"`);
+    return { table, label: TABLE_LABELS[table] || table, sMax, qMax: 4 * Math.PI * sMax };
+  }
+
+  // The range of the table a scattering configuration selects: kind "xray" with an
+  // X-ray model (as for evalXray), "electron" with a table number, or "ion".
+  function rangeFor(kind, modelOrTableNum) {
+    if (kind === "xray") {
+      const x = normalizeXrayModel(modelOrTableNum);
+      return tableRange(x.model === "waasmaier" ? "waasmaier" : xrayTableNameByNum(x.tableNum));
+    }
+    if (kind === "electron") return tableRange(tableNameByNum(modelOrTableNum));
+    if (kind === "ion") return tableRange("peng_ion");
+    throw new Error(`Unknown scattering kind "${kind}"`);
+  }
+
 
   // An element a table does not cover has an all-zero row, which would give
   // f_x = Z at every Q and f_e = 0 (Doyle-Turner lacks 44 elements). Z = 0
@@ -399,6 +443,8 @@
     getElementByZ,
     tableNameByNum,
     xrayTableNameByNum,
+    tableRange,
+    rangeFor,
     evalXray,
     evalXrayWaasmaier,
     evalXrayWk95,

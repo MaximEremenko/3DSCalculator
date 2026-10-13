@@ -149,6 +149,16 @@
       : `Electron neutral (table ${cfg.tableNum})`;
   }
 
+  // Published |Q| range of the table a configuration uses (null for neutrons).
+  function tableRangeOf(cfg) {
+    if (cfg.type === "neutron") return null;
+    const coeff = needCoeffSource();
+    if (cfg.type === "xray") {
+      return coeff.rangeFor("xray", cfg.model === "table" ? { model: "table", tableNum: cfg.tableNum } : "waasmaier");
+    }
+    return cfg.model === "ion_peng" ? coeff.rangeFor("ion") : coeff.rangeFor("electron", cfg.tableNum);
+  }
+
   function buildGroupedEvaluator(cfg) {
     if (cfg.type === "neutron") {
       return function evalGroup(group, qMag) {
@@ -269,6 +279,7 @@
       description: describeConfig(cfg),
       atomCount: parsed.atoms,
       warnings: [],
+      range: tableRangeOf(cfg),
     };
 
     const tPrep = nowMs();
@@ -432,6 +443,22 @@
       if (!profile.magnetic || !profile.magnetic.length) {
         throw new Error("Magnetic scattering needs magnetic moments; load a spin configuration.");
       }
+    }
+    // A scattering table is a fit over a published range of s = |Q|/4pi; beyond it a
+    // Gaussian electron fit loses the Rutherford tail and its X-ray value climbs back
+    // towards Z, and some magnetic <j0> fits grow. A grid that reaches past the range
+    // is computed with the fit values and one warning per run (as RMCProfile does).
+    const warn = (msg) => {
+      if (!profile.warnings.includes(msg)) profile.warnings.push(msg);
+    };
+    const qTop = core.gridQMax(h, k, l, Bq);
+    if (withNuclear && profile.range && qTop > profile.range.qMax * (1 + 1e-12)) {
+      const remedy = profile.range.sMax < 6
+        ? "Choose Lobato, Kirkland or Waasmaier-Kirfel, or reduce the h, k, l range."
+        : "Reduce the h, k, l range.";
+      warn(
+        `The grid reaches |Q| = ${qTop.toFixed(2)} 1/A, beyond the published range of the ${profile.range.label} table (s <= ${profile.range.sMax} 1/A, |Q| <= ${profile.range.qMax.toFixed(1)} 1/A); the values there are extrapolated fits. ${remedy}`
+      );
     }
     const grid = h.length * k.length * l.length;
     const chunkSize = Math.max(
