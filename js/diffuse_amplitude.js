@@ -460,6 +460,14 @@
         `The grid reaches |Q| = ${qTop.toFixed(2)} 1/A, beyond the published range of the ${profile.range.label} table (s <= ${profile.range.sMax} 1/A, |Q| <= ${profile.range.qMax.toFixed(1)} 1/A); the values there are extrapolated fits. ${remedy}`
       );
     }
+    if (withMagnetic) {
+      const ff = needFormFactors();
+      if (Number.isFinite(ff.qMax) && qTop > ff.qMax * (1 + 1e-12)) {
+        warn(
+          `The grid reaches |Q| = ${qTop.toFixed(2)} 1/A, beyond the range of the magnetic form-factor fits (s <= ${ff.sMax} 1/A, |Q| <= ${ff.qMax.toFixed(1)} 1/A); the values there are extrapolated fits. Reduce the h, k, l range.`
+        );
+      }
+    }
     const grid = h.length * k.length * l.length;
     const chunkSize = Math.max(
       1,

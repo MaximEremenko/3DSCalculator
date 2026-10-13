@@ -225,6 +225,13 @@
       c[4] * Math.exp(-c[5] * s2) + c[6] * Math.exp(-c[7] * s2) + c[8];
   }
 
+  // The <j0>, <j2> fits cover s <= 2 1/A (|Q| <= 25.1 1/A). Beyond that some of them
+  // grow instead of decaying: Mn2+ holds the term 0.0043 exp(+0.609 s^2), which is
+  // 0.03 at s = 2 but 1.0 at s = 3 and 2.0 at s = 3.2. evaluate() returns the fit
+  // anyway; the intensity calculation warns when its grid reaches past the range.
+  const S_MAX = 2;
+  const Q_MAX = 4 * Math.PI * S_MAX;
+
   // f(Q) for a form factor { j0, j2, c2 } (9-coefficient arrays).
   function evaluate(ff, q) {
     const s2 = (q / (4 * Math.PI)) ** 2;
@@ -253,6 +260,8 @@
   }
 
   global.MagneticFormFactors = Object.freeze({
+    sMax: S_MAX,
+    qMax: Q_MAX,
     ionKey,
     find,
     ions,

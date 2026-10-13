@@ -169,6 +169,24 @@ test("RMCProfile's analytic magnetic case: one spin in a 2x1x1 cell", async () =
   assert.ok(Math.abs(avg.I[0] - (2 / 3) * P2) < 1e-15);
 });
 
+// The <j0>, <j2> fits cover s <= 2 1/A (|Q| <= 25.1 1/A). Beyond it the Mn2+ fit grows as
+// 0.0043 exp(+0.609 s^2): 0.027 at s = 2, 1.01 at s = 3 and 2.0 at s = 3.2, where the true
+// form factor is close to zero. A grid reaching past the range computes with a warning.
+test("magnetic form factors publish their fitted range and warn beyond it", async () => {
+  const mn = { j0: FF.find("Mn2+").j0, j2: null, c2: 0 };
+  assert.equal(FF.sMax, 2);
+  assert.equal(FF.qMax, 8 * Math.PI);
+  assert.ok(Math.abs(FF.evaluate(mn, 8 * Math.PI) - 0.0272) < 1e-3);
+  assert.ok(Math.abs(FF.evaluate(mn, 12 * Math.PI) - 1.0105) < 1e-3, `Mn2+ fit at s = 3: ${FF.evaluate(mn, 12 * Math.PI)}`);
+  const parsed = scatty("mno_order_spins_01.txt");
+  // a = 4.4344 A: h = 18 reaches |Q| = 25.5 1/A, h = 17 stays at 24.1
+  const warned = await compute(parsed, [[0, 18], [0], [0]], { mode: "magnetic" });
+  assert.ok(warned.I.every(Number.isFinite));
+  assert.equal(warned.profile.warnings.length, 1);
+  assert.match(warned.profile.warnings[0], /\|Q\| = 25\.5\d.*magnetic form-factor fits \(s <= 2 1\/A, \|Q\| <= 25\.1 1\/A\)/);
+  assert.deepEqual(Array.from((await compute(parsed, [[0, 17], [0], [0]], { mode: "magnetic" })).profile.warnings), []);
+});
+
 test("magnetic modes are refused without moments or for X-rays", async () => {
   const parsed = scatty("mno_order_spins_01.txt");
   await assert.rejects(compute({ ...parsed, magnetic: undefined }, [[0.5], [0.5], [0.5]], { mode: "magnetic" }), /magnetic moments/);
