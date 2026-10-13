@@ -18,9 +18,19 @@ function mottBethe(z, q) {
   return (z - S.evalXray(z, q, "waasmaier")) / (8 * Math.PI * Math.PI * A0 * s * s);
 }
 
+// Elements a table does not cover (Doyle-Turner lacks 44) must raise, not
+// scatter as a point charge f_x = Z.
+function covered(model, z) {
+  return model === "waasmaier" || ctx.ScatteringCoeffDB.scTables[model][z].a.some((x) => x !== 0);
+}
+
 test("X-ray scattering factors: f(0) = Z and every table follows Waasmaier-Kirfel", () => {
   for (const model of ["waasmaier", "lobato", "peng_0_4", "doyle", "weickenmeier", "kirkland"]) {
     for (let z = 2; z <= 92; z++) {
+      if (!covered(model, z)) {
+        assert.throws(() => S.evalXray(z, 0, model), new RegExp(`no parameters for Z=${z};`), `${model} Z=${z}`);
+        continue;
+      }
       assert.ok(Math.abs(S.evalXray(z, 0, model) - z) / z < 2e-3, `${model} f(0) for Z=${z}: ${S.evalXray(z, 0, model)}`);
     }
     if (model === "waasmaier") continue;
@@ -39,15 +49,124 @@ test("electron scattering factors follow the Mott-Bethe transform", () => {
   const tables = { lobato: 1, peng_0_4: 2, doyle: 3, weickenmeier: 4, kirkland: 5 };
   for (const [name, num] of Object.entries(tables)) {
     for (const z of ELEMENTS) for (const q of QS) {
-      // Doyle-Turner (four Gaussians) and Weickenmeier-Kohl are the least
-      // accurate fits here (5% for Si at Q = 8, 4.5% for He at Q = 12)
+      // Weickenmeier-Kohl's He fit is the least accurate here (4.5% at Q = 12),
+      // as in Weickenmeier's own code (V = 0.5, B as tabulated)
       const ratio = S.evalElectronNeutral(z, q, num) / mottBethe(z, q);
-      assert.ok(Math.abs(ratio - 1) < (name === "doyle" || name === "weickenmeier" ? 0.06 : 0.03), `${name} Z=${z} Q=${q}: ratio ${ratio}`);
+      assert.ok(Math.abs(ratio - 1) < (name === "weickenmeier" ? 0.06 : 0.03), `${name} Z=${z} Q=${q}: ratio ${ratio}`);
     }
   }
 });
 
-test("Weickenmeier-Kohl has no hydrogen", () => {
-  assert.throws(() => S.evalElectronNeutral(1, 2, 4), /no parameters for Z=1/);
-  assert.throws(() => S.evalXray(1, 2, "weickenmeier"), /no parameters for Z=1/);
+test("Weickenmeier-Kohl and Doyle-Turner have no hydrogen; Doyle-Turner lacks Y-Ru and La", () => {
+  assert.throws(() => S.evalElectronNeutral(1, 2, 4), /Weickenmeier-Kohl has no parameters for Z=1/);
+  assert.throws(() => S.evalXray(1, 2, "weickenmeier"), /Weickenmeier-Kohl has no parameters for Z=1/);
+  for (const z of [1, 39, 40, 44, 57]) {
+    assert.throws(() => S.evalElectronNeutral(z, 2, 3), new RegExp(`Doyle-Turner has no parameters for Z=${z};`));
+    assert.throws(() => S.evalXray(z, 2, "doyle"), new RegExp(`Doyle-Turner has no parameters for Z=${z};`));
+  }
+  // a vacancy (Z = 0) still scatters nothing
+  for (const model of ["lobato", "peng_0_4", "doyle", "kirkland"]) assert.equal(S.evalXray("Va", 2, model), 0);
+});
+
+// Every Doyle-Turner row against Waasmaier-Kirfel and its Mott-Bethe transform.
+// The table came from MULTEM with twelve transcription errors (Mg a1, Al a4,
+// Si b3, K a4, Sc b1, Fe b2, Ga a2, As b2, Ag b2, Cd a2, Sb a3, Rn b1) and Eu's
+// row filed under La. The values used now are those two independent copies
+// (Felix; pymatgen and EMsoft) agree on, or, where the copies differ, the one
+// that follows WK95 and Peng (Sc b1 88.96, Rn b1 38.41). As, Sc and K were
+// 8-13% of Z off in X-ray and 16-27% in electron; the Eu row is 6% of Z and
+// 12% off as La, 1.4% and 2.3% as Eu. The four-Gaussian fits reach 3% of Z
+// near Q = 11 (Li, Na, K, Ca), in every copy.
+test("Doyle-Turner rows follow Waasmaier-Kirfel and Mott-Bethe", () => {
+  let checked = 0;
+  for (let z = 1; z <= 98; z++) {
+    if (!covered("doyle", z)) continue;
+    checked++;
+    for (let q = 0.5; q <= 12; q += 0.5) {
+      const ref = S.evalXray(z, q, "waasmaier"), fx = S.evalXray(z, q, "doyle");
+      assert.ok(Math.abs(fx - ref) <= 0.035 * z, `Doyle Z=${z} Q=${q}: f_x ${fx} vs ${ref}`);
+      const ratio = S.evalElectronNeutral(z, q, 3) / mottBethe(z, q);
+      assert.ok(Math.abs(ratio - 1) < 0.04, `Doyle Z=${z} Q=${q}: f_e ratio ${ratio}`);
+    }
+  }
+  assert.equal(checked, 54);
+  assert.ok(covered("doyle", 63) && !covered("doyle", 57));
+});
+
+// Hydrogen 1s, exact: f_x(Q) = 1 / (1 + (Q a0 / 2)^2)^2, 0.2225 at Q = 4. A table
+// evaluated in the wrong variable (Q/4pi for 1/d, or the reverse) gives 0.610
+// (Lobato, Kirkland) or 0.03 (Waasmaier, Peng).
+function hydrogen(q) {
+  return 1 / (1 + (q * A0 / 2) ** 2) ** 2;
+}
+const H_TABLES = { waasmaier: 0, lobato: 1, peng_0_4: 2, kirkland: 5 };
+
+test("hydrogen follows the exact 1s form factor in every table that has it", () => {
+  assert.ok(Math.abs(hydrogen(4) - 0.2225) < 1e-4);
+  for (const [name, num] of Object.entries(H_TABLES)) {
+    assert.ok(Math.abs(S.evalXray(1, 4, name) - 0.2225) < 1e-3, `${name} f(4) = ${S.evalXray(1, 4, name)}`);
+    for (let q = 0.5; q <= 12; q += 0.5) {
+      const s = q / (4 * Math.PI), exact = hydrogen(q);
+      assert.ok(Math.abs(S.evalXray(1, q, name) - exact) < 0.01, `${name} Q=${q}: ${S.evalXray(1, q, name)} vs ${exact}`);
+      if (num === 0) continue;
+      const fe = S.evalElectronNeutral(1, q, num), exactFe = (1 - exact) / (8 * Math.PI * Math.PI * A0 * s * s);
+      assert.ok(Math.abs(fe / exactFe - 1) < 0.012, `${name} electron Q=${q}: ${fe} vs ${exactFe}`);
+    }
+  }
+});
+
+// Peng (1998) ions: f_e = sum a exp(-b s^2) + 0.023934 dZ / s^2. The inverse
+// Mott-Bethe transform gives f_x(0) = Z - dZ, and at large Q the ion and the
+// neutral atom scatter alike. H- is left out: its fit is poor beyond Q = 10.
+test("Peng ions: f_x(0) = Z - charge and the large-Q limit of the neutral atom", () => {
+  const keys = Object.keys(ctx.ScatteringCoeffDB.pengIonByZValence);
+  assert.ok(keys.length > 100);
+  for (const key of keys) {
+    const [z, dz] = key.split(":").map(Number), q0 = 1e-3, s0 = q0 / (4 * Math.PI);
+    const fx0 = z - 8 * Math.PI * Math.PI * A0 * s0 * s0 * S.evalElectronIonPeng(z, dz, q0);
+    assert.ok(Math.abs(fx0 - (z - dz)) < 1e-3 * z, `${key}: f_x(0) = ${fx0}`);
+    if (z === 1) continue;
+    for (const q of [6, 8, 10, 12]) {
+      const ratio = S.evalElectronIonPeng(z, dz, q) / mottBethe(z, q);
+      assert.ok(Math.abs(ratio - 1) < 0.04, `${key} Q=${q}: ratio ${ratio}`);
+    }
+  }
+});
+
+// End to end: for one species, sqrt(I / I_neutron) * |b| = |f(Q)|. Hydrogen on
+// a cubic cell (a = 3 A), Q = 4 1/A on the h axis.
+test("one-species intensity over the neutron intensity gives f(Q)/b", async () => {
+  const full = loadScripts([
+    "js/scattering_coeff_db.js", "js/scattering_coeff_sources.js", "js/diffuse_core.js",
+    "js/diffuse_amplitude.js", "js/rmc6f_reader.js",
+  ]);
+  const rows = [];
+  for (let x = 0; x < 2; x++) for (let y = 0; y < 2; y++) for (let z = 0; z < 2; z++) {
+    const f = [x + 0.03 * (y - z), y + 0.02 * (x - 0.5), z - 0.04 * x].map((v) => v / 2);
+    rows.push(`${rows.length + 1} H [1] ${f.join(" ")} 1 ${x} ${y} ${z}`);
+  }
+  const text = ["(Version 6f format configuration file)", "Number of atoms: 8", "Supercell dimensions: 2 2 2",
+    "Cell (Ang/deg): 6 6 6 90 90 90", "Atoms:", ...rows].join("\n");
+  const parsed = full.DiffuseCore.attachNeutronCoefficients(full.RMC6fReader.parse("h.rmc6f", text), 10);
+  async function directSum(spec) {
+    const src = spec.sourcesPacked, t = spec.targetsPacked, c = spec.strengths, out = new Float64Array(t.length / 3 * 2);
+    for (let k = 0; k < t.length / 3; k++) for (let j = 0; j < src.length / 3; j++) {
+      const p = spec.isign * (t[k * 3] * src[j * 3] + t[k * 3 + 1] * src[j * 3 + 1] + t[k * 3 + 2] * src[j * 3 + 2]);
+      out[k * 2] += c[j * 2] * Math.cos(p) - c[j * 2 + 1] * Math.sin(p);
+      out[k * 2 + 1] += c[j * 2] * Math.sin(p) + c[j * 2 + 1] * Math.cos(p);
+    }
+    return { out };
+  }
+  const run = async (scattering) => (await full.DiffuseAmplitude.computeIntensity({
+    parsed, h: [4 * 3 / (2 * Math.PI)], k: [0], l: [0], Bq: parsed.Bq, backend: "test", sub: false, runType3: directSum, scattering,
+  })).I[0];
+  const b = Math.abs(parsed.fca[0]), neutron = await run({ type: "neutron", model: "fast" });
+  const exactFe = (1 - 0.22248) / (8 * Math.PI * Math.PI * A0 / (Math.PI * Math.PI)); // s = 1/pi at Q = 4
+  for (const [name, num] of Object.entries(H_TABLES)) {
+    const fx = b * Math.sqrt((await run({ type: "xray", model: num ? "table" : "waasmaier", tableNum: num })) / neutron);
+    assert.ok(Math.abs(fx - 0.2225) < 1e-3, `${name} X-ray f(4) = ${fx}`);
+    if (num === 0) continue;
+    const fe = b * Math.sqrt((await run({ type: "electron", model: "neutral_table", tableNum: num })) / neutron);
+    assert.ok(Math.abs(fe / exactFe - 1) < 0.012, `${name} electron f(4) = ${fe} vs ${exactFe}`);
+  }
 });

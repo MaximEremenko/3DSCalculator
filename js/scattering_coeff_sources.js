@@ -139,6 +139,24 @@
     }
   }
 
+  const TABLE_LABELS = {
+    lobato: "Lobato",
+    peng_0_4: "Peng",
+    doyle: "Doyle-Turner",
+    weickenmeier: "Weickenmeier-Kohl",
+    kirkland: "Kirkland",
+  };
+
+  // An element a table does not cover has an all-zero row, which would give
+  // f_x = Z at every Q and f_e = 0 (Doyle-Turner lacks 44 elements). Z = 0
+  // (vacancy) keeps its zero row and scatters nothing.
+  function requireParams(table, z, rec) {
+    if (z > 0 && !(rec.a || []).some((x) => Number(x) !== 0)) {
+      throw new Error(`${TABLE_LABELS[table] || table} has no parameters for Z=${z}; choose another table.`);
+    }
+    return rec;
+  }
+
   function getNeutralTableRec(symOrZ, tableNum) {
     const db = needDb();
     const z = resolveZ(symOrZ);
@@ -146,7 +164,7 @@
     const byZ = db.scTables[table] || {};
     const rec = byZ[String(z)];
     if (!rec) throw new Error(`Scattering table "${table}" missing for Z=${z}`);
-    return { z, rec, table };
+    return { z, rec: requireParams(table, z, rec), table };
   }
 
   function getXrayTableRec(symOrZ, tableNum) {
@@ -163,7 +181,7 @@
     const byZ = db.scTables[table] || {};
     const rec = byZ[String(z)];
     if (!rec) throw new Error(`Scattering table "${table}" missing for Z=${z}`);
-    return { z, rec, table };
+    return { z, rec: requireParams(table, z, rec), table };
   }
 
   function evalElectronNeutral(symOrZ, qTemp, tableNum) {
